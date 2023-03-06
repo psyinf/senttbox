@@ -9,7 +9,7 @@ add_executable(${APP_NAME}
 	${HEADER_FILES}
 	${CPP_FILES}
 )
-find_package(entt CONFIG REQUIRED)			   
+find_package(EnTT CONFIG REQUIRED)			   
 find_package(spdlog CONFIG REQUIRED)	
 target_link_libraries (${APP_NAME} 
 	PRIVATE				
