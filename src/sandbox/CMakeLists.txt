@@ -1,4 +1,4 @@
-set(APP_NAME loadscene)
+set(APP_NAME serializeScene)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -10,12 +10,17 @@ add_executable(${APP_NAME}
 	${CPP_FILES}
 )
 find_package(EnTT CONFIG REQUIRED)			   
-find_package(spdlog CONFIG REQUIRED)	
+find_package(spdlog CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(cereal CONFIG REQUIRED)
+
 target_link_libraries (${APP_NAME} 
 	PRIVATE				
-		#${PROJECT_NAMESPACE}::core
+		${PROJECT_NAMESPACE}::common
 		EnTT::EnTT
 		spdlog::spdlog_header_only
+		nlohmann_json::nlohmann_json
+		cereal::cereal
 )
 
 target_include_directories(${APP_NAME}

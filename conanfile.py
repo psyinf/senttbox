@@ -2,7 +2,7 @@ from conans import ConanFile
 from conan.tools.cmake import CMake
 
 class MSGE(ConanFile):
-    name = "MSGE"
+    name = "SenTTBox"
     version = "0.1"
     settings = "os", "compiler", "build_type", "arch"
     requires = [("psyinf-gmtl/0.7.1")
@@ -14,7 +14,7 @@ class MSGE(ConanFile):
                 ,("nlohmann_json/3.11.2")
                 ,("modern-cpp-kafka/2022.12.07")
                 ,("entt/3.11.1")
-
+                ,("cereal/1.3.2")
                 ]
     generators = "cmake_find_package_multi"
     
