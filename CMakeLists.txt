@@ -30,6 +30,8 @@ if(WIN32)
 	add_definitions(-DNOMINMAX)
 endif ()
 
+
+add_subdirectory(src/common)
 add_subdirectory(src/sandbox)
 #add_subdirectory(src/core)
 #add_subdirectory(src/taskEngine)
