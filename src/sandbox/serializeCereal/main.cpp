@@ -172,8 +172,9 @@ int main(int argc, char** argv)
     {
         std::ofstream storage("data/test.out");
         // output finishes flushing its contents when it goes out of scope
-        cereal::JSONOutputArchive  output{storage};
-        
+        cereal::JSONOutputArchive output{storage};
+
+
         entt::snapshot{scene_reg}.entities(output).component<Entity, StaticTransform>(output);
     }
     {
@@ -182,11 +183,11 @@ int main(int argc, char** argv)
         // output finishes flushing its contents when it goes out of scope
         cereal::JSONInputArchive input{storage};
 
-        entt::snapshot_loader{reg2}.entities(input).component<Entity, StaticTransform>(input);
-        for (auto view = reg2.view<Entity, StaticTransform>(); auto entity : view)
+        entt::continuous_loader{reg2}.entities(input).component< StaticTransform>(input);
+        for (auto view = reg2.view<StaticTransform>(); auto entity : view)
         {
-            auto [ent, trans] = view.get<Entity, StaticTransform>(entity);
-            fmt::print(fmt::emphasis::bold | fg(fmt::color::aquamarine), "{} of type {} at {:.2f}\n", ent.name, ent.type, trans.spatial.position);
+            auto ent = view.get<StaticTransform>(entity);
+            fmt::print(fmt::emphasis::bold | fg(fmt::color::aquamarine), " at {:.2f}\n", ent.spatial.position);
         }
 
     }
