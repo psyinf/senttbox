@@ -1,9 +1,7 @@
 #pragma once
 #include "LoadOperation.h"
 #include "SceneObject.h"
-#include "components/RenderModel.h"
-#include "components/StaticTransform.h"
-#include "core/Scene.h"
+#include "core/Update.h"
 
 #include <nlohmann/json.hpp>
 #include <thread>
@@ -24,11 +22,12 @@ vsg::vec3 gmtlToVsgf(const gmtl::Vec<DATA_TYPE, 3>& v)
 class SceneUpdater : public vsg::Inherit<vsg::Visitor, SceneUpdater>
 {
 public:
-    SceneUpdater(vsg::ref_ptr<vsg::Group> root, vsg::ref_ptr<vsg::Viewer> viewer, const Scene& scene)
+    SceneUpdater(vsg::ref_ptr<vsg::Group> root, vsg::ref_ptr<vsg::Viewer> viewer, UpdateQueue& queue)
         : root(root)
         , viewer(viewer)
         , threads(vsg::OperationThreads::create(1, viewer->status))
-        , scene(scene)
+        , updateQueue(queue)
+
     {
         if (!root)
             throw std::invalid_argument("Root mustn't be a nullptr");
@@ -42,7 +41,7 @@ public:
         geom_info.position = gmtlToVsg(rm.offset);
 
         if (rm.path == "cone")
-        {   
+        {
             node = builder->createCone(geom_info);
         }
         else if (rm.path == "cube")
@@ -63,23 +62,22 @@ public:
         return new_object;
     }
 
+
     void apply(vsg::FrameEvent& frame)
     {
-        auto view = scene.getRegistry().view<RenderModel, StaticTransform>();
-        for (auto entity : view)
-        {
-            auto [transform, model] = view.get<StaticTransform, RenderModel>(entity);
 
+
+        for (const auto& [entity, update] : updateQueue.get())
+        {
             if (!objects.contains(entity))
             {
-
                 builder->options = {};
                 // create
-                auto new_object = factory(model);
+                auto new_object = factory(update.model);
                 root->addChild(new_object);
                 objects.emplace(entity, new_object);
             }
-            vsg::vec3 position = gmtlToVsgf(transform.position);
+            vsg::vec3 position = gmtlToVsgf(update.transform.position);
 
             objects.at(entity)->update(position);
         }
@@ -154,10 +152,11 @@ public:
     */
 
 private:
-    vsg::ref_ptr<vsg::Group>                                    root;
-    vsg::observer_ptr<vsg::Viewer>                              viewer;
-    vsg::ref_ptr<vsg::OperationThreads>                         threads;
-    vsg::ref_ptr<vsg::Builder>                                  builder = vsg::Builder::create();
-    const Scene&                                                scene;
+    vsg::ref_ptr<vsg::Group>            root;
+    vsg::observer_ptr<vsg::Viewer>      viewer;
+    vsg::ref_ptr<vsg::OperationThreads> threads;
+    vsg::ref_ptr<vsg::Builder>          builder = vsg::Builder::create();
+
     std::unordered_map<entt::entity, vsg::ref_ptr<SceneObject>> objects;
+    UpdateQueue&                                                updateQueue;
 };

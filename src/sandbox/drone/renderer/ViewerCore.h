@@ -1,16 +1,16 @@
 #pragma once
 #include "SceneUpdater.h"
 
-#include <vsg/all.h>
 #include <functional>
+#include <vsg/all.h>
 class ViewerCore
 {
 
 
 public:
-    void setup(Scene& scene)
+    void setup(UpdateQueue& queue)
     {
-        //options->paths         = {R"(e:\develop\install\vsgRenderSandbox\bin\data\)"};
+        // options->paths         = {R"(e:\develop\install\vsgRenderSandbox\bin\data\)"};
         options->sharedObjects = vsg::SharedObjects::create();
 
         auto shaderSet              = vsg::createFlatShadedShaderSet(options);
@@ -33,27 +33,14 @@ public:
 
         viewer->addEventHandler(vsg::CloseHandler::create(viewer));
         viewer->addEventHandler(vsg::Trackball::create(camera));
-      
-        
-        updater = SceneUpdater::create(sceneRoot, viewer, scene);
+
+
+        updater = SceneUpdater::create(sceneRoot, viewer, queue);
         viewer->addEventHandler(updater);
     }
 
-    void frame()
-    {
-        
 
-        // pass any events into EventHandlers assigned to the Viewer
-        viewer->handleEvents();
-
-        viewer->update();
-
-        viewer->recordAndSubmit();
-
-        viewer->present();
-    }
-
-    void run(const std::function<void()> &pre, const std::function<void()> & post)
+    bool frame()
     {
         if (firstFrame)
         {
@@ -65,21 +52,28 @@ public:
             viewer->compile();
             firstFrame = false;
         }
-
-        while (viewer->advanceToNextFrame())
+        bool advance = viewer->advanceToNextFrame();
+        if (advance)
         {
-            pre();
-            frame();
-            post();
+            // pass any events into EventHandlers assigned to the Viewer
+            viewer->handleEvents();
+
+            viewer->update();
+
+            viewer->recordAndSubmit();
+
+            viewer->present();
         }
+        return advance;
     }
+
 
 private:
     vsg::ref_ptr<vsg::Viewer>  viewer    = vsg::Viewer::create();
     vsg::ref_ptr<vsg::Options> options   = vsg::Options::create();
     vsg::ref_ptr<vsg::Group>   sceneRoot = vsg::Group::create();
-    vsg::ref_ptr<SceneUpdater> updater   ;
-    
+    vsg::ref_ptr<SceneUpdater> updater;
+
     vsg::ref_ptr<vsg::Camera> camera;
     bool                      firstFrame = true;
 };
