@@ -1,3 +1,4 @@
 add_subdirectory(serializeCereal)
 add_subdirectory(serializeNLohmann)
 add_subdirectory(scenegui)
+add_subdirectory(drone)

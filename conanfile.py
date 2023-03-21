@@ -20,12 +20,15 @@ class MSGE(ConanFile):
                 ,("vulkan-loader/1.3.239.0")
                 ,("glfw/3.3.2")
                 ,("glew/2.1.0")
+                ,("vsg/1.0.0")
+                ,("glslang/11.5.0")
                 ]
     generators = "cmake_find_package_multi"
     
     def configure(self):
         self.options['fmt'].header_only = True
         self.options['spdlog'].header_only = True
+        self.options['vsg'].shared = False
         #self.options['imgui'].shared = True
         #self.options['vulkan-loader'].shared = True
     def imports(self):    
