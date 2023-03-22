@@ -5,8 +5,8 @@
 #include <core/Scene.h>
 #include "System.h"
 #include <random>
-
-/*
+#include <execution>
+    /*
 Update of transform based on Kinematics
 */
 
@@ -16,15 +16,17 @@ public:
     virtual ~Physics() = default;
 
 
-    void update(Scene& scene, float timestamp) const override
+    void update(Scene& scene, const FrameStamp& stamp) const override
     {
         auto view = scene.getRegistry().view<StaticTransform, Kinematic>();
-
-        for (auto&& [entity, spatial, kinematic] : view.each())
-        {
-            spatial.position += static_cast<double>(timestamp) * kinematic.velocity;            
-            //some dampening
+        // for (auto&& [entity, spatial, kinematic] : view.each())
+        
+        std::for_each(std::execution::par_unseq, view.begin(), view.end(), [&view, &stamp](auto& entity) {
+            auto& spatial = view.get<StaticTransform>(entity);
+            auto& kinematic = view.get<Kinematic>(entity);
+            spatial.position += stamp.toSeconds(stamp.frame_time) * kinematic.velocity;
+            // some dampening
             kinematic.velocity *= 0.99;
-        }
+        });
     }
 };

@@ -1,27 +1,40 @@
 #pragma once
-#include <components/StaticTransform.h>
 #include <components/RenderModel.h>
-#include <unordered_map>
+#include <components/StaticTransform.h>
 #include <entt/entt.hpp>
+#include <unordered_map>
 
+
+struct FrameStamp
+{
+    std::chrono::milliseconds frame_time;
+    uint64_t                  frame_number;
+    static double             toSeconds(std::chrono::milliseconds delta)
+    {
+        std::chrono::duration<double, std::ratio<1, 1>> t = delta;
+        return t.count();
+    }
+};
 struct Update
 {
     StaticTransform transform;
     RenderModel     model;
-    
-    //Update(Update&) = delete;
 
+    // Update(Update&) = delete;
 };
 
-class UpdateQueue {
+class UpdateQueue
+{
 public:
     using Queue = std::unordered_map<entt::entity, Update>;
 
-    void push(Queue&& b) {
+    void push(Queue&& b)
+    {
         back = std::move(b);
     }
 
-    void get(Queue& target) {
+    void get(Queue& target)
+    {
         back.swap(target);
     }
     Queue get()
@@ -33,5 +46,4 @@ public:
 
 private:
     Queue back;
-    
 };

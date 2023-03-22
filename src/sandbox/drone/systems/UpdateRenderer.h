@@ -5,18 +5,20 @@
 class UpdateRenderer : public System
 {
 public:
-    explicit UpdateRenderer(UpdateQueue& up)
+    explicit 
+UpdateRenderer(UpdateQueue& up)
         : updater(up)
     {
     }
 
-    void update(Scene& scene, float frametime) const override
+    void update(Scene& scene, const FrameStamp& stamp) const override
     {
+        //TODO: use a lockfree queue?
         UpdateQueue::Queue updates;
         auto view = scene.getRegistry().view<RenderModel, StaticTransform>();
-        for (auto entity : view)
+        for (auto& entity : view)
         {
-            auto [transform, model] = view.get<StaticTransform, RenderModel>(entity);
+            auto&& [transform, model] = view.get<StaticTransform, RenderModel>(entity);
             
             updates.emplace(entity, Update{transform, model});
         }

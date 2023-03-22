@@ -37,12 +37,12 @@ public:
 
     void runSystems()
     {
-        std::ranges::for_each(systems, [this](auto& sys) { sys->update(scene, 0.016f); });
+       
+        std::ranges::for_each(systems, [this](auto& sys) { sys->update(scene, FrameStamp{std::chrono::milliseconds{16}, frame_number}); });
     }
 
     void frame()
     {
-        std::uint64_t            frame_number = 0;
         std::chrono::nanoseconds ms_systems{};
         std::chrono::nanoseconds ms_rendering{};
         bool                     advance = true;
@@ -80,6 +80,7 @@ private:
     ViewerCore                           viewer;
     std::vector<std::shared_ptr<System>> systems;
     UpdateQueue                          updateQueue;
+    std::uint64_t                        frame_number = 0;
 };
 
 int main(int argc, char** argv)
