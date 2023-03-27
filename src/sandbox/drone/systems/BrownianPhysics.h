@@ -17,7 +17,8 @@ private:
     mutable std::vector<gmtl::Vec3d>                rands{100000};
 
 public:
-    BrownianPhysics()
+    BrownianPhysics(Scene& scene)
+         : System(scene)
     {
         buildRand();
     }
@@ -29,13 +30,17 @@ public:
                                                     normal_dist(gen), normal_dist(gen), normal_dist(gen)}; });
     }
 
-    void update(Scene& scene, const FrameStamp& stamp) const override
+    void update(Scene& scene, const FrameStamp& stamp) override
     {
+        if (stamp.frame_number > 5)
+        {
+            return;
+        }
         auto view = scene.getRegistry().view<Kinematic>();
 
         std::for_each(std::execution::par_unseq, view.begin(), view.end(), [this,&stamp, &view](auto entity) {
             auto&& kinematic = view.get<Kinematic>(entity);
-            if (int_dist(gen) > 10)
+            if (int_dist(gen) > 90)
             {
                 kinematic.velocity += rands[(entt::entt_traits<entt::entity>::to_integral(entity) + stamp.frame_number) % rands.size()];
             }

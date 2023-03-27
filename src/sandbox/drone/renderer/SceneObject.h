@@ -10,13 +10,15 @@ class SceneObject : public vsg::Inherit<vsg::MatrixTransform, SceneObject>
 public:
     SceneObject() = default;
 
-    void update(vsg::vec3 pos)
+    void update(vsg::dvec3 pos, vsg::dvec3 scale)
     {
         position     = pos;
-        this->matrix = vsg::translate(position);
+       
+        this->matrix = vsg::translate(position) * vsg::rotate(vsg::dquat{}) * vsg::scale(scale); // pivot* vsg::translate(- vsg::dvec3{0,0,-0});
     }
+    
 
 private:
-    vsg::vec3 position;
+    vsg::dvec3 position;
 };
 

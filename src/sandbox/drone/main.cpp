@@ -2,23 +2,44 @@
 #include "renderer/ViewerCore.h"
 
 #include <systems/BrownianPhysics.h>
+#include <systems/Gravitation.h>
 #include <systems/Physics.h>
 #include <systems/UpdateRenderer.h>
 
 void setupScene(Scene& scene)
 {
+    auto               scenario = 1;
+    std::random_device   rd{};
+    std::mt19937 gen{rd()};
 
+
+    std::uniform_int_distribution<unsigned> int_dist{0u, 100u};
+    std::normal_distribution<double>              normal_dist{10, 1.5};
+    std::normal_distribution<double>        normal_dist2{0, 2.5};
+    /*
     scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{1, 0, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
     scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, 1, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
     scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, 0, 1}, gmtl::EulerAngleZXYd{}}, {"cone"});
     scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{-1, 0, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
     scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, -1, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
     scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, 0, -1}, gmtl::EulerAngleZXYd{}}, {"cone"});
-    for (int i = 10000; i-- > 0;)
+    */
+    if (scenario == 1)
     {
-        scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{0, 0, 0}, gmtl::EulerAngleZXYd{}}, {}, {.path = "sphere", .offset{0, 0, 5}});
-        // scene.makeDrone<>(StaticTransform{gmtl::Vec3d{0, 0, 0}, gmtl::EulerAngleZXYd{}}, Kinematic{}, RenderModel{.path = "sphere", .offset{0, 0, 5}});
+        for (int i = 1200; i-- > 0;)
+        {
+            const float radius = normal_dist2(gen) * 100.0;
+            scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{sin(i / 400.0) * radius, cos(i / 400.0) * radius, normal_dist2(gen)}, gmtl::EulerAngleZXYd{}}, {.mass = normal_dist(gen)}, {.path = "sphere", .offset{0, 0, 0}});
+            // scene.makeDrone<>(StaticTransform{gmtl::Vec3d{0, 0, 0}, gmtl::EulerAngleZXYd{}}, Kinematic{}, RenderModel{.path = "sphere", .offset{0, 0, 5}});
+        }
     }
+    
+    else if (scenario == 3)
+    {
+        scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{-5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5.0}, {.path = "sphere", .offset{0, 0, 0}});
+        scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5}, {.path = "sphere", .offset{0, 0, 0}});
+    }
+    
 }
 
 
@@ -30,14 +51,15 @@ public:
 
         viewer.setup(updateQueue);
         setupScene(scene);
-        systems.emplace_back(std::make_shared<Physics>());
-        systems.emplace_back(std::make_shared<BrownianPhysics>());
-        systems.emplace_back(std::make_shared<UpdateRenderer>(updateQueue));
+        systems.emplace_back(std::make_shared<Physics>(scene));
+       // systems.emplace_back(std::make_shared<BrownianPhysics>(scene));
+        systems.emplace_back(std::make_shared<OrbitalSystem>(scene));
+        systems.emplace_back(std::make_shared<UpdateRenderer>(scene, updateQueue));
     }
 
     void runSystems()
     {
-       
+
         std::ranges::for_each(systems, [this](auto& sys) { sys->update(scene, FrameStamp{std::chrono::milliseconds{16}, frame_number}); });
     }
 
@@ -64,10 +86,10 @@ public:
             ++frame_number;
             if (frame_number % 10 == 0)
             {
-                std::cout << "sys: " << std::chrono::duration_cast<std::chrono::milliseconds>(ms_systems / 10) 
-                          << "render:  " << std::chrono::duration_cast<std::chrono::milliseconds>(ms_rendering / 10) 
-                          << "total: " << std::chrono::duration_cast<std::chrono::milliseconds> ((ms_systems + ms_rendering) / 10)
-                            << std::endl;
+                std::cout << "sys: " << std::chrono::duration_cast<std::chrono::milliseconds>(ms_systems / 10)
+                          << "render:  " << std::chrono::duration_cast<std::chrono::milliseconds>(ms_rendering / 10)
+                          << "total: " << std::chrono::duration_cast<std::chrono::milliseconds>((ms_systems + ms_rendering) / 10)
+                          << std::endl;
                 ms_rendering = std::chrono::nanoseconds{};
                 ms_systems   = std::chrono::nanoseconds{};
             }

@@ -2,6 +2,14 @@
 #include <core/Update.h>
 class System
 {
+    Scene& scene;
+
 public:
-    virtual void update(Scene&, const FrameStamp& frame_stamp) const= 0;
+    System(Scene& scene)
+    :scene(scene){
+
+    }
+    
+
+    virtual void update(Scene&, const FrameStamp& frame_stamp) = 0;
 };

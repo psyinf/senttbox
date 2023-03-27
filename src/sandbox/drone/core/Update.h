@@ -19,8 +19,8 @@ struct Update
 {
     StaticTransform transform;
     RenderModel     model;
-
-    // Update(Update&) = delete;
+    bool            remove = false;
+    
 };
 
 class UpdateQueue

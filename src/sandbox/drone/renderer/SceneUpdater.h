@@ -14,9 +14,9 @@ vsg::t_vec3<DATA_TYPE> gmtlToVsg(const gmtl::Vec<DATA_TYPE, 3>& v)
 }
 
 template <class DATA_TYPE>
-vsg::vec3 gmtlToVsgf(const gmtl::Vec<DATA_TYPE, 3>& v)
+auto gmtlToVsgd(const gmtl::Vec<DATA_TYPE, 3>& v)
 {
-    return vsg::vec3(static_cast<float>(v[0]), static_cast<float>(v[1]), static_cast<float>(v[2]));
+    return vsg::dvec3(static_cast<double>(v[0]), static_cast<double>(v[1]), static_cast<double>(v[2]));
 }
 
 class SceneUpdater : public vsg::Inherit<vsg::Visitor, SceneUpdater>
@@ -69,6 +69,7 @@ public:
 
         for (const auto& [entity, update] : updateQueue.get())
         {
+           
             if (!objects.contains(entity))
             {
                 builder->options = {};
@@ -77,79 +78,19 @@ public:
                 root->addChild(new_object);
                 objects.emplace(entity, new_object);
             }
-            vsg::vec3 position = gmtlToVsgf(update.transform.position);
+            if (update.remove)
+            {
+                root->children.erase(std::remove(root->children.begin(), root->children.end(), objects[entity]), root->children.end());
+            }
 
-            objects.at(entity)->update(position);
+            vsg::dvec3 position = gmtlToVsgd(update.transform.position);
+            
+            objects.at(entity)->update(position, vsg::dvec3{update.model.scale, update.model.scale, update.model.scale});
+            
         }
         root->accept(*this);
     }
-    /**
-    void apply_old(vsg::FrameEvent& frame) override
-    {
-
-
-        UpdateQueue<Update>::Queue current;
-
-        queue.swap(current);
-
-        for (const auto& record : current)
-        {
-            std::string    object_key = (record.key);
-            nlohmann::json j          = nlohmann::json::parse(record.value);
-
-            // extract spatial
-            auto      x    = j["spatial"]["pos"];
-            auto      type = j["type"];
-            vsg::vec3 v(x[0], x[1], x[2]);
-
-            // check if we need to create it
-            if (!objects.contains(object_key))
-            {
-                auto new_object  = SceneObject::create();
-                auto builder     = vsg::Builder::create();
-                builder->options = {};
-
-                if (type == "cone")
-                {
-                    threads->add(CompileOperation::create(viewer, new_object, builder->createCone()));
-                }
-                else if (type == "cube")
-                {
-                    threads->add(CompileOperation::create(viewer, new_object, builder->createBox()));
-                }
-                else if (type == "sphere")
-                {
-                    threads->add(CompileOperation::create(viewer, new_object, builder->createSphere()));
-                }
-                else
-                {
-                    threads->add(CompileOperation::create(viewer, new_object, builder->createCylinder()));
-                }
-
-                auto                     parent = object_key.substr(0, object_key.find_last_of("."));
-                vsg::ref_ptr<vsg::Group> attachment_point;
-                if (parent == object_key)
-                {
-                    attachment_point = root;
-                }
-                else
-                {
-                    attachment_point = objects.at(parent);
-                }
-                attachment_point->addChild(new_object);
-
-                objects.insert({object_key, new_object});
-            }
-            // update
-            objects.at(object_key)->update(v);
-        }
-
-
-        if (root)
-
-            root->accept(*this);
-    }
-    */
+  
 
 private:
     vsg::ref_ptr<vsg::Group>            root;

@@ -17,7 +17,7 @@ public:
         auto graphicsPipelineConfig = vsg::GraphicsPipelineConfigurator::create(shaderSet);
         graphicsPipelineConfig->init();
 
-        vsg::ref_ptr<vsg::Window> window(vsg::Window::create(vsg::WindowTraits::create()));
+        vsg::ref_ptr<vsg::Window> window(vsg::Window::create(vsg::WindowTraits::create(-500,-400,700,700)));
         if (!window)
         {
             throw std::runtime_error("Failed to initialize the window");

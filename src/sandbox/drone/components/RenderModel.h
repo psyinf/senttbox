@@ -4,5 +4,6 @@ struct RenderModel
 {
     std::string path;
     gmtl::Vec3f offset;
+    double      scale;
 
 };
