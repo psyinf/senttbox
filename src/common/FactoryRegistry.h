@@ -8,20 +8,23 @@
 #include <string>
 
 
-
 namespace common
 {
 
-template <class T, typename... A>
+template <class T, typename... Arguments>
 class GenericFactory
 {
 public:
-    using CtorFunc = std::function<typename std::unique_ptr<typename std::remove_pointer_t<T>>(A...)>;
+    using CtorFunc = std::function<typename std::unique_ptr<typename std::remove_pointer_t<T>>(Arguments&&...)>;
 
-
+    template<typename... FixedParameters>
+    static auto proto(FixedParameters&&...b)
+    {
+        return [&b...](Arguments&&... a) { return std::make_unique<T>(std::forward<Arguments...>(a...), std::forward<FixedParameters...>(b...)); };
+    }
     static auto proto()
     {
-        return [](A... a) { return std::make_unique<T>(a...); };
+        return [](Arguments&&... a) { return std::make_unique<T>(std::forward<Arguments...>(a...)); };
     }
 
     GenericFactory()  = default;
@@ -53,9 +56,9 @@ public:
      * \brief construct an instance of the registered type
      * \param key
      */
-    auto make(std::string_view key, A... a) const
+    auto make(std::string_view key, Arguments&&... a) const
     {
-        return getPrototype(key)(a...);
+        return getPrototype(key)(std::forward<Arguments...>(a...));
     }
 
 private:
