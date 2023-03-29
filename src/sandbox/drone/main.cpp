@@ -2,16 +2,15 @@
 #include "renderer/ViewerCore.h"
 
 #include <FactoryRegistry.h>
+#include <nlohmann/json.hpp>
 #include <systems/BrownianPhysics.h>
 #include <systems/Gravitation.h>
 #include <systems/Physics.h>
 #include <systems/UpdateRenderer.h>
 
-#include <nlohmann/json.hpp>
-
 /* TODOs :
 
-* make at least system setup loadable
+* save/load entities
 */
 void setupScene(Scene& scene)
 {
@@ -51,6 +50,8 @@ struct SceneDescriptor
 {
     using SystemName = std::string;
     std::vector<SystemName> systems;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SceneDescriptor, systems)
 };
 
 class Simulation
@@ -59,14 +60,11 @@ class Simulation
 public:
     Simulation()
     {
-        //for now fixed prototypes, later from plugins
+        // for now fixed prototypes, later from plugins
         system_factory.registerPrototype("physics", common::GenericFactory<Physics, Scene&>::proto());
         system_factory.registerPrototype("brownian", common::GenericFactory<BrownianPhysics, Scene&>::proto());
         system_factory.registerPrototype("gravitation", common::GenericFactory<Gravitation, Scene&>::proto());
         system_factory.registerPrototype("update_renderer", common::GenericFactory<UpdateRenderer, Scene&>::proto(updateQueue));
-
-        
-    
     }
 
     void initialize(const SceneDescriptor& scene_desc)
@@ -74,11 +72,11 @@ public:
         // initialize systems
         for (const auto& system_name : scene_desc.systems)
         {
-           systems.emplace_back(system_factory.make(system_name, scene));
+            systems.emplace_back(system_factory.make(system_name, scene));
         }
 
         setupScene(scene);
-        
+
         viewer.setup(updateQueue);
     }
 
@@ -135,9 +133,21 @@ private:
 
 int main(int argc, char** argv)
 {
-    
+    if (0)
+    {
+
+        std::ofstream test("data/scene1.json");
+        nlohmann::json j;
+        j["scene"] = nlohmann::json(SceneDescriptor{.systems{"physics", "update_renderer", "gravitation"}});
+        test << j;
+    }
+    std::ifstream storage("data/scene1.json");
+
+    nlohmann::json j = nlohmann::json::parse(storage);
+
+
     Simulation sim;
-    sim.initialize(SceneDescriptor{.systems{"physics", "update_renderer", "gravitation"}});
+    sim.initialize(j["scene"].get<SceneDescriptor>());
     sim.frame();
 
 
