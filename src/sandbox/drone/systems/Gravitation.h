@@ -1,7 +1,7 @@
 #include <components/Kinematic.h>
 #include <components/StaticTransform.h>
 
-class OrbitalSystem : public System
+class Gravitation : public System
 {
 public:
     using System::System;

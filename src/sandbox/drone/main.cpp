@@ -1,20 +1,27 @@
 #include "core/Scene.h"
 #include "renderer/ViewerCore.h"
 
+#include <FactoryRegistry.h>
 #include <systems/BrownianPhysics.h>
 #include <systems/Gravitation.h>
 #include <systems/Physics.h>
 #include <systems/UpdateRenderer.h>
 
+#include <nlohmann/json.hpp>
+
+/* TODOs :
+
+* make at least system setup loadable
+*/
 void setupScene(Scene& scene)
 {
     auto               scenario = 1;
-    std::random_device   rd{};
-    std::mt19937 gen{rd()};
+    std::random_device rd{};
+    std::mt19937       gen{rd()};
 
 
     std::uniform_int_distribution<unsigned> int_dist{0u, 100u};
-    std::normal_distribution<double>              normal_dist{10, 1.5};
+    std::normal_distribution<double>        normal_dist{10, 1.5};
     std::normal_distribution<double>        normal_dist2{0, 2.5};
     /*
     scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{1, 0, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
@@ -33,28 +40,46 @@ void setupScene(Scene& scene)
             // scene.makeDrone<>(StaticTransform{gmtl::Vec3d{0, 0, 0}, gmtl::EulerAngleZXYd{}}, Kinematic{}, RenderModel{.path = "sphere", .offset{0, 0, 5}});
         }
     }
-    
+
     else if (scenario == 3)
     {
         scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{-5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5.0}, {.path = "sphere", .offset{0, 0, 0}});
         scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5}, {.path = "sphere", .offset{0, 0, 0}});
     }
-    
 }
-
+struct SceneDescriptor
+{
+    using SystemName = std::string;
+    std::vector<SystemName> systems;
+};
 
 class Simulation
 {
-public:
-    void load(std::string_view scene_desc)
-    {
 
-        viewer.setup(updateQueue);
+public:
+    Simulation()
+    {
+        //for now fixed prototypes, later from plugins
+        system_factory.registerPrototype("physics", common::GenericFactory<Physics, Scene&>::proto());
+        system_factory.registerPrototype("brownian", common::GenericFactory<BrownianPhysics, Scene&>::proto());
+        system_factory.registerPrototype("gravitation", common::GenericFactory<Gravitation, Scene&>::proto());
+        system_factory.registerPrototype("update_renderer", common::GenericFactory<UpdateRenderer, Scene&>::proto(updateQueue));
+
+        
+    
+    }
+
+    void initialize(const SceneDescriptor& scene_desc)
+    {
+        // initialize systems
+        for (const auto& system_name : scene_desc.systems)
+        {
+           systems.emplace_back(system_factory.make(system_name, scene));
+        }
+
         setupScene(scene);
-        systems.emplace_back(std::make_shared<Physics>(scene));
-       // systems.emplace_back(std::make_shared<BrownianPhysics>(scene));
-        systems.emplace_back(std::make_shared<OrbitalSystem>(scene));
-        systems.emplace_back(std::make_shared<UpdateRenderer>(scene, updateQueue));
+        
+        viewer.setup(updateQueue);
     }
 
     void runSystems()
@@ -98,18 +123,21 @@ public:
 
 
 private:
+    using SystemsFactory = common::GenericFactory<System, Scene&>;
+
     Scene                                scene;
     ViewerCore                           viewer;
     std::vector<std::shared_ptr<System>> systems;
     UpdateQueue                          updateQueue;
     std::uint64_t                        frame_number = 0;
+    SystemsFactory                       system_factory;
 };
 
 int main(int argc, char** argv)
 {
-
+    
     Simulation sim;
-    sim.load("some");
+    sim.initialize(SceneDescriptor{.systems{"physics", "update_renderer", "gravitation"}});
     sim.frame();
 
 
