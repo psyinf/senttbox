@@ -9,9 +9,9 @@
 class UpdateRenderer : public System
 {
 public:
-    explicit UpdateRenderer(Scene& scene, UpdateQueue& up)
+    explicit UpdateRenderer(Scene& scene, UpdateQueue& q)
         : System(scene)
-        , updater(up)
+        , updateQueue(q)
     {
         // entt::observer observer{registry, entt::collector.update<sprite>()};
         scene.getRegistry().on_destroy<RenderModel>().connect<&UpdateRenderer::destroyed>(this);
@@ -39,10 +39,10 @@ public:
             updates.emplace(entity, Update{{}, {}, {true}});
         }
         deleted_entities.clear();
-        updater.push(std::move(updates));
+        updateQueue.push(std::move(updates));
     }
 
 private:
-    UpdateQueue&                             updater;
+    UpdateQueue&                             updateQueue;
     mutable std::unordered_set<entt::entity> deleted_entities;
 };
