@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 #include <cereal/archives/json.hpp>
+#include <cereal/archives/binary.hpp>
 #include <entt/core/hashed_string.hpp>
 #include <entt/entity/registry.hpp>
 
@@ -170,26 +171,39 @@ int main(int argc, char** argv)
     }
 
     {
+        std::ofstream storage_e("data/test.oute");
         std::ofstream storage("data/test.out");
+        std::ofstream storage2("data/test.out2");
         // output finishes flushing its contents when it goes out of scope
+        cereal::JSONOutputArchive output_e{storage_e};
         cereal::JSONOutputArchive output{storage};
+        cereal::JSONOutputArchive output2{storage2};
 
+        entt::snapshot{scene_reg}.entities(output_e).component<Entity>(output).component<StaticTransform>(output2);
+        
+       
 
-        entt::snapshot{scene_reg}.entities(output).component<Entity, StaticTransform>(output);
     }
     {
         entt::registry reg2;
+        std::ifstream  storage_e("data/test.oute");
+        
         std::ifstream storage("data/test.out");
-        // output finishes flushing its contents when it goes out of scope
+        std::ifstream  storage2("data/test.out2");
+        
+        cereal::JSONInputArchive input_e{storage_e};
         cereal::JSONInputArchive input{storage};
+        cereal::JSONInputArchive input2{storage2};
 
-        entt::continuous_loader{reg2}.entities(input).component< StaticTransform>(input);
-        for (auto view = reg2.view<StaticTransform>(); auto entity : view)
+        entt::continuous_loader{reg2}.entities(input_e).component<Entity>(input).component<StaticTransform>(input2);
+        int i = 0;
+        for (auto view = reg2.view<StaticTransform,Entity >(); auto entity : view)
         {
-            auto ent = view.get<StaticTransform>(entity);
-            fmt::print(fmt::emphasis::bold | fg(fmt::color::aquamarine), " at {:.2f}\n", ent.spatial.position);
+            ++i;
+            auto&& [ent, stat] = view.get<Entity, StaticTransform>(entity);
+            fmt::print(fmt::emphasis::bold | fg(fmt::color::aquamarine), " at {:.2f}\n", stat.spatial.position);
         }
-
+        std::cout << i;
     }
    
 
