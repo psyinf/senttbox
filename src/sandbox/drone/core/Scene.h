@@ -7,27 +7,43 @@ class Scene
 {
 public:
     Scene() = default;
-    template <typename T, typename... Args>
-    void addComponent(entt::entity id, T t)
+    template <typename Component, typename... Args>
+    void addComponent(entt::entity id, Component&& t)
     {
-        scene_registry.emplace<T>(id, t);
+        scene_registry.emplace<Component>(id, std::forward<Component>(t));
+    }
 
+    template <typename Component, typename... Args>
+    void addComponent(entt::entity id, Component&& t, Args&&... args)
+    {
+        scene_registry.emplace<Component>(id, std::forward<Component>(t));
+        addComponent(id, std::forward<Args>(args)...);     
     }
-    template <typename T, typename... Args>
-    void addComponent(entt::entity id, T t, Args... args) {
-        scene_registry.emplace<T>(id, t);
-        addComponent(id, args...);     
-    }
-    template <typename... Args> 
-    auto makeDrone(Args ... args) {
+
+    //make an entity by providing a number of components with their respective constructors
+    template <typename... Components> 
+    auto makeEntity(Components&&... components)
+    {
         auto id = scene_registry.create();
-        addComponent(id, args...);
-        //scene_registry.emplace<StaticTransform>(id, (args...));
-        //scene_registry.emplace<RenderModel>(id, args...);
+        addComponent(id, std::forward<Components>(components)...);
+      
         return id;
     }
-   
-    
+
+    template <typename... Components, typename Archive> 
+    void save(const entt::registry& reg, Archive& archive) {
+        entt::snapshot{reg}.entities(archive).component<Components...>(archive);
+        //saveComponent<Components...>(archive, snapshot);       
+    }
+
+    template <typename... Components, typename Archive>
+    void load(entt::registry& reg, Archive& archive)
+    {
+        //reg.clear();
+        entt::continuous_loader{reg}.entities(archive).component<Components...>(archive).orphans();
+        
+        //loadComponent<Components...>(reg, archive);
+    }
 
     explicit operator entt::registry&() { return scene_registry; }
     explicit operator const entt::registry&() const { return scene_registry; }

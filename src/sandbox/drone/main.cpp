@@ -2,12 +2,16 @@
 #include "renderer/ViewerCore.h"
 
 #include <FactoryRegistry.h>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/string.hpp>
+#include <components/serializers/Kinematic_cereal.h>
+#include <components/serializers/StaticTransform_cereal.h>
 #include <nlohmann/json.hpp>
 #include <systems/BrownianPhysics.h>
 #include <systems/Gravitation.h>
 #include <systems/Physics.h>
 #include <systems/UpdateRenderer.h>
-
 /* TODOs :
 
 * save/load entities
@@ -22,30 +26,24 @@ void setupScene(Scene& scene)
     std::uniform_int_distribution<unsigned> int_dist{0u, 100u};
     std::normal_distribution<double>        normal_dist{10, 1.5};
     std::normal_distribution<double>        normal_dist2{0, 2.5};
-    /*
-    scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{1, 0, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
-    scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, 1, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
-    scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, 0, 1}, gmtl::EulerAngleZXYd{}}, {"cone"});
-    scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{-1, 0, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
-    scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, -1, 0}, gmtl::EulerAngleZXYd{}}, {"cone"});
-    scene.makeDrone<StaticTransform, RenderModel>({gmtl::Vec3d{0, 0, -1}, gmtl::EulerAngleZXYd{}}, {"cone"});
-    */
     if (scenario == 1)
     {
-        for (int i = 1200; i-- > 0;)
+        for (int i = 1; i-- > 0;)
         {
             const float radius = normal_dist2(gen) * 100.0;
-            scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{sin(i / 400.0) * radius, cos(i / 400.0) * radius, normal_dist2(gen)}, gmtl::EulerAngleZXYd{}}, {.mass = normal_dist(gen)}, {.path = "sphere", .offset{0, 0, 0}});
+            scene.makeEntity<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{sin(i / 400.0) * radius, cos(i / 400.0) * radius, normal_dist2(gen)}, gmtl::EulerAngleZXYd{}}, {.velocity = {0.45, 0.0, 0.0}, .mass = normal_dist(gen)}, {.path = "sphere", .offset{0, 0, 0}});
             // scene.makeDrone<>(StaticTransform{gmtl::Vec3d{0, 0, 0}, gmtl::EulerAngleZXYd{}}, Kinematic{}, RenderModel{.path = "sphere", .offset{0, 0, 5}});
         }
     }
 
     else if (scenario == 3)
     {
-        scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{-5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5.0}, {.path = "sphere", .offset{0, 0, 0}});
-        scene.makeDrone<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5}, {.path = "sphere", .offset{0, 0, 0}});
+        scene.makeEntity<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{-5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5.0}, {.path = "sphere", .offset{0, 0, 0}});
+        scene.makeEntity<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5}, {.path = "sphere", .offset{0, 0, 0}});
     }
 }
+
+
 struct SceneDescriptor
 {
     using SystemName = std::string;
@@ -76,6 +74,11 @@ public:
         }
 
         setupScene(scene);
+
+        // output finishes flushing its contents when it goes out of scope
+        auto s = std::ofstream{"data/123test.out"};
+        auto x = cereal::JSONOutputArchive(s);
+        scene.save<StaticTransform, Kinematic>(scene.getRegistry(), x);
 
         viewer.setup(updateQueue);
     }
@@ -116,6 +119,18 @@ public:
                 ms_rendering = std::chrono::nanoseconds{};
                 ms_systems   = std::chrono::nanoseconds{};
             }
+            if (frame_number % 500 == 0)
+            {
+                std::cout << "load" << std::endl;
+                auto s = std::ifstream{"data/123test.out"};
+                auto x = cereal::JSONInputArchive(s);
+                
+                scene.load<StaticTransform, Kinematic>(scene.getRegistry(), x);
+
+                auto s1 = std::ofstream{"data/123test.out1"};
+                auto x1 = cereal::JSONOutputArchive(s1);
+                scene.save<StaticTransform, Kinematic>(scene.getRegistry(), x1);
+            }
         }
     }
 
@@ -136,12 +151,12 @@ int main(int argc, char** argv)
     if (0)
     {
 
-        std::ofstream test("data/scene1.json");
+        std::ofstream  test("data/scene1.json");
         nlohmann::json j;
         j["scene"] = nlohmann::json(SceneDescriptor{.systems{"physics", "update_renderer", "gravitation"}});
         test << j;
     }
-    std::ifstream storage("data/scene1.json");
+    std::ifstream storage("data/scene2.json");
 
     nlohmann::json j = nlohmann::json::parse(storage);
 

@@ -13,6 +13,7 @@ find_package(vsg CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(glslang CONFIG REQUIRED)
+find_package(cereal CONFIG REQUIRED)
 
 target_link_libraries (${APP_NAME} 
 	PRIVATE				
@@ -22,6 +23,7 @@ target_link_libraries (${APP_NAME}
 		vsg::vsg
 		glslang::glslang
 		glslang::SPIRV
+		cereal::cereal
 		
 )
 

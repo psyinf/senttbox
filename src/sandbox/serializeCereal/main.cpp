@@ -11,6 +11,8 @@
 #include <nlohmann/json.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/binary.hpp>
+#include <cereal/types/string.hpp>
+
 #include <entt/core/hashed_string.hpp>
 #include <entt/entity/registry.hpp>
 
@@ -174,11 +176,14 @@ int main(int argc, char** argv)
         std::ofstream storage_e("data/test.oute");
         std::ofstream storage("data/test.out");
         std::ofstream storage2("data/test.out2");
+        std::ofstream storagexxx("data/test.outeb", std::ios::binary);
         // output finishes flushing its contents when it goes out of scope
         cereal::JSONOutputArchive output_e{storage_e};
         cereal::JSONOutputArchive output{storage};
         cereal::JSONOutputArchive output2{storage2};
+        cereal::BinaryOutputArchive outputxxx{storagexxx};
 
+        entt::snapshot{scene_reg}.entities(outputxxx).component<Entity>(outputxxx).component<StaticTransform>(outputxxx);
         entt::snapshot{scene_reg}.entities(output_e).component<Entity>(output).component<StaticTransform>(output2);
         
        
@@ -186,16 +191,22 @@ int main(int argc, char** argv)
     }
     {
         entt::registry reg2;
+        std::ifstream  storage_xxx("data/test.outeb", std::ios::binary);
         std::ifstream  storage_e("data/test.oute");
         
         std::ifstream storage("data/test.out");
         std::ifstream  storage2("data/test.out2");
         
+        cereal::BinaryInputArchive input_xxx{storage_xxx};
         cereal::JSONInputArchive input_e{storage_e};
         cereal::JSONInputArchive input{storage};
         cereal::JSONInputArchive input2{storage2};
-
-        entt::continuous_loader{reg2}.entities(input_e).component<Entity>(input).component<StaticTransform>(input2);
+        
+            // entt::continuous_loader{reg2}.entities(input_e).component<Entity>(input).component<StaticTransform>(input2);
+            // TODO: idea: keep an index of the components starting position inside the archive to allow for random access by seeking the stream appropriately
+            entt::continuous_loader{reg2}
+                .entities(input_xxx);
+        entt::continuous_loader{reg2}.component<Entity>(input_xxx).component<StaticTransform>(input_xxx);
         int i = 0;
         for (auto view = reg2.view<StaticTransform,Entity >(); auto entity : view)
         {
