@@ -18,13 +18,13 @@ public:
     using CtorFunc = std::function<typename std::unique_ptr<typename std::remove_pointer_t<T>>(Arguments&&...)>;
 
     template<typename... FixedParameters>
-    static auto proto(FixedParameters&&...b)
+    static auto proto(FixedParameters&&...fixed)
     {
-        return [&b...](Arguments&&... a) { return std::make_unique<T>(std::forward<Arguments...>(a...), std::forward<FixedParameters...>(b...)); };
+        return [&fixed...](Arguments&&... args) { return std::make_unique<T>(std::forward<Arguments>(args)..., std::forward<FixedParameters>(fixed)...); };
     }
     static auto proto()
     {
-        return [](Arguments&&... a) { return std::make_unique<T>(std::forward<Arguments...>(a...)); };
+        return [](Arguments&&... args) { return std::make_unique<T>(std::forward<Arguments>(args)...); };
     }
 
     GenericFactory()  = default;
