@@ -1,14 +1,13 @@
 #include "SDL.h"
 
-#include <cmath>
-
-#include <imgui.h>
-#include <bindings/imgui_impl_sdl.h>
-#include <bindings/imgui_impl_opengl3.h>
-#include <SDL_opengl.h>
 #include <Orbit.h>
+#include <SDL_opengl.h>
+#include <bindings/imgui_impl_opengl3.h>
+#include <bindings/imgui_impl_sdl.h>
 #include <cmath>
+#include <imgui.h>
 #include <iostream>
+
 
 double pi()
 {
@@ -69,12 +68,11 @@ struct Dimension
 };
 
 
-
-const OrbitalParameters op{
+OrbitalParameters op{
     .eccentricity   = 0.70,
     .semimajor_axis = 100,
     .incliniation   = 0.0,
-    .longAN         = 1.0,
+    .longAN         = 0.0,
     .longPA         = 0.0,
 
 
@@ -101,7 +99,8 @@ void drawScene(SDL_Renderer* renderer, double t)
     SDL_Rect r{static_cast<int>(p[0] + mid.x), static_cast<int>(p[1] + mid.y), 3, 3};
     SDL_RenderFillRect(renderer, &r);
 }
-int main(int, char**)
+
+void initialize(SDL_Window** window, SDL_Renderer** renderer, SDL_GLContext* gl_context)
 {
     // Seems necessary to draw SDL images but broke rendering of external window
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
@@ -111,43 +110,26 @@ int main(int, char**)
     // depending on whether SDL_INIT_GAMECONTROLLER is enabled or disabled.. updating to the latest version of SDL is recommended!)
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
-        printf("Error: %s\n", SDL_GetError());
-        return -1;
+
+        throw std::runtime_error("SDL_Init Error");
     }
 
-    // Decide GL+GLSL versions
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-    // GL ES 2.0 + GLSL 100
-    const char* glsl_version = "#version 100";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#elif defined(__APPLE__)
-    // GL 3.2 Core + GLSL 150
-    const char* glsl_version = "#version 150";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-#else
     // GL 3.0 + GLSL 130
     const char* glsl_version = "#version 130";
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#endif
 
     // Create window with graphics context
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Window*     window       = SDL_CreateWindow("Dear ImGui SDL2+OpenGL3 example", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
-    SDL_Renderer*   renderer     = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-    SDL_GLContext   gl_context   = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
+    *window                      = SDL_CreateWindow("Dear ImGui SDL2+OpenGL3 example", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+    *renderer                    = SDL_CreateRenderer(*window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    *gl_context                  = SDL_GL_CreateContext(*window);
+    SDL_GL_MakeCurrent(*window, *gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
 
     // Setup Dear ImGui context
@@ -175,29 +157,32 @@ int main(int, char**)
     }
 
     // Setup Platform/Renderer backends
-    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    ImGui_ImplSDL2_InitForOpenGL(*window, *gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
+}
+namespace ImGui
+{
+bool SilderDouble(const char* label, double* v, double v_min, double v_max, const char* format, ImGuiSliderFlags flags = 0)
+{
+    return ImGui::SliderScalar(label, ImGuiDataType_Double, v, &v_min, &v_max, format, flags);
+}
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    // io.Fonts->AddFontDefault();
-    // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    // IM_ASSERT(font != NULL);
+bool SilderDoubleAngular(const char* label, double* v, const char* format, ImGuiSliderFlags flags = 0)
+{
+    static double v_min = 0.0;
+    static double v_max = 2 * M_PI;
+    return ImGui::SliderScalar(label, ImGuiDataType_Double, v, &v_min, &v_max, format, flags);
+}
+} // namespace ImGui
 
-    // Our state
-    bool   show_demo_window    = true;
-    bool   show_another_window = false;
-    ImVec4 clear_color         = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+int main(int, char**)
+{
+    SDL_Window*   window     = nullptr;
+    SDL_Renderer* renderer   = nullptr;
+    SDL_GLContext gl_context = nullptr;
+    initialize(&window, &renderer, &gl_context);
+
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     SDL_Surface* surface = SDL_LoadBMP("E:/test.bmp");
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -227,22 +212,31 @@ int main(int, char**)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        const double
+                     f64_one  = 1.0;
+        const double f64_zero = 0.0;
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
-            static float f       = 0.0f;
-            static int   counter = 0;
+            ImGui::SilderDouble("Eccentricity low", &op.eccentricity, 0.0, 0.9999999, "%.4f ecc");
+            ImGui::SilderDoubleAngular("Semimajor axis", &op.semimajor_axis, "%.4f semi major");
+
+            ImGui::SilderDoubleAngular("Inclination", &op.incliniation, "%.4f ecc");
+            ImGui::SilderDoubleAngular("Longitude of ascending node", &op.longAN, "%.4f LAN");
+
+            ImGui::SilderDoubleAngular("Argument of periapsis", &op.longPA, "%.4f PA");
+            ImGui::SilderDoubleAngular("Mean anomaly", &op.meanLongitude, "%.4f Mean Long");
+            ImGui::SilderDouble("Revolution number at epoch", &op.epoch, 0, 365.0, "%.4f epoch");
+
+
+            static int    counter = 0;
+            static double f       = 0.7;
 
             ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");          // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
+            ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+            // ImGui::SliderFloat("float", ImGui::InputDouble(&f), 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
             ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
             if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
@@ -254,18 +248,10 @@ int main(int, char**)
             ImGui::End();
         }
 
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window); // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
 
         // Rendering
         ImGui::Render();
+        ImGuiIO& io = ImGui::GetIO();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -274,7 +260,8 @@ int main(int, char**)
         SDL_Rect rct2;
         rct2.x = rct2.y = 200;
         rct2.w = rct2.h = 400;
-        //SDL_RenderCopy(renderer, texture, 0, &rct2);
+
+        // SDL_RenderCopy(renderer, texture, 0, &rct2);
         drawScene(renderer, t);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
