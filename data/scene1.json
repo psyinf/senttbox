@@ -1,0 +1,13 @@
+{
+"scene":
+    {
+    "systems":
+        [
+        "physics",
+        "update_renderer",
+        "gravitation"
+        ],
+	"name": "sample_scene",
+	"scene_file": "data/ent1.se"
+    }
+}

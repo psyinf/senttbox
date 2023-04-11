@@ -6,19 +6,25 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/types/string.hpp>
 #include <components/serializers/Kinematic_cereal.h>
+#include <components/serializers/RenderModel_cereal.h>
 #include <components/serializers/StaticTransform_cereal.h>
+#include <components/serializers/OrbitalParameters_cereal.h>
 #include <nlohmann/json.hpp>
 #include <systems/BrownianPhysics.h>
 #include <systems/Gravitation.h>
 #include <systems/Physics.h>
 #include <systems/UpdateRenderer.h>
-/* TODOs :
-
-* save/load entities
-*/
-void setupScene(Scene& scene)
+#include <components/OrbitalParameters.h>
+enum class Scenario
 {
-    auto               scenario = 1;
+    GRAV,
+    GRAV_TEST,
+    ORBITS,
+};
+
+void saveScene(std::string_view file, Scenario scenario)
+{
+    Scene              scene;
     std::random_device rd{};
     std::mt19937       gen{rd()};
 
@@ -26,30 +32,40 @@ void setupScene(Scene& scene)
     std::uniform_int_distribution<unsigned> int_dist{0u, 100u};
     std::normal_distribution<double>        normal_dist{10, 1.5};
     std::normal_distribution<double>        normal_dist2{0, 2.5};
-    if (scenario == 1)
+    if (scenario == Scenario::GRAV)
     {
-        for (int i = 1; i-- > 0;)
+        for (int i = 100; i-- > 0;)
         {
             const float radius = normal_dist2(gen) * 100.0;
             scene.makeEntity<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{sin(i / 400.0) * radius, cos(i / 400.0) * radius, normal_dist2(gen)}, gmtl::EulerAngleZXYd{}}, {.velocity = {0.45, 0.0, 0.0}, .mass = normal_dist(gen)}, {.path = "sphere", .offset{0, 0, 0}});
-            // scene.makeDrone<>(StaticTransform{gmtl::Vec3d{0, 0, 0}, gmtl::EulerAngleZXYd{}}, Kinematic{}, RenderModel{.path = "sphere", .offset{0, 0, 5}});
         }
     }
 
-    else if (scenario == 3)
+    else if (scenario == Scenario::ORBITS)
+    {
+        scene.makeEntity<OrbitalParameters, RenderModel>({1.0, 5000, 0.0, 0.0, 0.0}, {.path = "orbit"});
+    }
+
+    else if (scenario == Scenario::GRAV_TEST)
     {
         scene.makeEntity<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{-5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5.0}, {.path = "sphere", .offset{0, 0, 0}});
         scene.makeEntity<StaticTransform, Kinematic, RenderModel>({gmtl::Vec3d{5, 0, 0}, gmtl::EulerAngleZXYd{}}, {.mass = 5}, {.path = "sphere", .offset{0, 0, 0}});
     }
+    auto s1 = std::ofstream{std::string(file)};
+    auto x1 = cereal::JSONOutputArchive(s1);
+    scene.save<StaticTransform, Kinematic, RenderModel, OrbitalParameters>(scene.getRegistry(), x1);
 }
 
 
 struct SceneDescriptor
 {
     using SystemName = std::string;
+    std::string             name;
+    std::string             scene_file;
     std::vector<SystemName> systems;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SceneDescriptor, systems)
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SceneDescriptor, name, systems, scene_file)
 };
 
 class Simulation
@@ -72,13 +88,13 @@ public:
         {
             systems.emplace_back(system_factory.make(system_name, scene));
         }
+        {
+            auto stream   = std::ifstream{scene_desc.scene_file};
+            auto iarchive = cereal::JSONInputArchive(stream);
+            scene.load<StaticTransform, Kinematic, RenderModel, OrbitalParameters>(scene.getRegistry(), iarchive);
+        }
+        // create rendermodels
 
-        setupScene(scene);
-
-        // output finishes flushing its contents when it goes out of scope
-        auto s = std::ofstream{"data/123test.out"};
-        auto x = cereal::JSONOutputArchive(s);
-        scene.save<StaticTransform, Kinematic>(scene.getRegistry(), x);
 
         viewer.setup(updateQueue);
     }
@@ -119,18 +135,7 @@ public:
                 ms_rendering = std::chrono::nanoseconds{};
                 ms_systems   = std::chrono::nanoseconds{};
             }
-            if (frame_number % 500 == 0)
-            {
-                std::cout << "load" << std::endl;
-                auto s = std::ifstream{"data/123test.out"};
-                auto x = cereal::JSONInputArchive(s);
-                
-                scene.load<StaticTransform, Kinematic>(scene.getRegistry(), x);
 
-                auto s1 = std::ofstream{"data/123test.out1"};
-                auto x1 = cereal::JSONOutputArchive(s1);
-                scene.save<StaticTransform, Kinematic>(scene.getRegistry(), x1);
-            }
         }
     }
 
@@ -148,15 +153,17 @@ private:
 
 int main(int argc, char** argv)
 {
-    if (0)
+    if (1)
     {
 
         std::ofstream  test("data/scene1.json");
         nlohmann::json j;
-        j["scene"] = nlohmann::json(SceneDescriptor{.systems{"physics", "update_renderer", "gravitation"}});
+        j["scene"] = nlohmann::json(SceneDescriptor{.name = "sample_scene", .scene_file = "data/ent1.se", .systems{"physics", "update_renderer", "gravitation"}});
         test << j;
+
+        saveScene("data/ent1.se", Scenario::ORBITS);
     }
-    std::ifstream storage("data/scene2.json");
+    std::ifstream storage("data/scene1.json");
 
     nlohmann::json j = nlohmann::json::parse(storage);
 

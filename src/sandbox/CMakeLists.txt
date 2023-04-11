@@ -4,4 +4,4 @@ add_subdirectory(scenegui)
 add_subdirectory(loaderTest)
 add_subdirectory(drone)
 add_subdirectory(sdl)
-add_subdirectory(KeplerOrbits)
+

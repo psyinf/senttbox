@@ -1,6 +1,8 @@
 #pragma once
 #include "System.h"
 #include <components/Kinematic.h>
+#include <components/RenderModel.h>
+#include <components/OrbitalParameters.h>
 #include <entt/entt.hpp>
 #include <unordered_set>
 
@@ -26,18 +28,31 @@ public:
     {
 
         // TODO: use a lockfree queue?
+        // TODO: diff/change based update
         UpdateQueue::Queue updates;
-        auto               view = scene.getRegistry().view<RenderModel, Kinematic, StaticTransform>();
-        for (auto& entity : view)
         {
-            auto&& [transform, kin, model] = view.get<StaticTransform, Kinematic, RenderModel>(entity);
-            model.scale                    = std::pow(kin.mass, 1.0 / 3.0);
-            updates.emplace(entity, Update{transform, model});
+            auto view = scene.getRegistry().view<RenderModel, Kinematic, StaticTransform>();
+            for (auto& entity : view)
+            {
+                auto&& [transform, kin, model] = view.get<StaticTransform, Kinematic, RenderModel>(entity);
+                model.scale                    = std::pow(kin.mass, 1.0 / 3.0);
+                updates.emplace(entity, Update{transform, model});
+            }
+        }
+     
+        {
+            auto view = scene.getRegistry().view<OrbitalParameters,RenderModel>();
+            for (auto& entity : view)
+            {
+                auto&& [orbital, model] = view.get<OrbitalParameters, RenderModel>(entity);
+                updates.emplace(entity, Update{StaticTransform(), model});
+            }
         }
         for (auto entity : deleted_entities)
         {
             updates.emplace(entity, Update{{}, {}, {true}});
         }
+
         deleted_entities.clear();
         updateQueue.push(std::move(updates));
     }

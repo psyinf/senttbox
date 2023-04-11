@@ -39,7 +39,7 @@ public:
     template <typename... Components, typename Archive>
     void load(entt::registry& reg, Archive& archive)
     {
-        //reg.clear();
+        reg.clear();
         entt::continuous_loader{reg}.entities(archive).component<Components...>(archive).orphans();
         
         //loadComponent<Components...>(reg, archive);
