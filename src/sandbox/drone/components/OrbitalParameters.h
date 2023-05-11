@@ -4,6 +4,7 @@
 
 struct OrbitalParameters
 {
+    //orbital parameters
     double eccentricity;
     double semimajor_axis;
     double incliniation;
@@ -11,7 +12,7 @@ struct OrbitalParameters
     double longPA; ///> longitude of periapsis, basically the orientation of the ellipse
     /// time specific parameters
     double meanLongitude{}; /** Mean longitude is the ecliptic longitude at which an orbiting body could be found if its orbit were circular and free of perturbations. While nominally a simple longitude, in practice the mean longitude does not correspond to any one physical angle.**/
-    double epoch{};
+    double epoch{};		 /** The epoch is the time at which the orbital elements are defined. The epoch is usually given as a Julian date.**/
 };
 
 struct EulerCoordinates
@@ -48,7 +49,7 @@ private:
         }
         return e;
     }
-
+    /**/     
     static double getTrueAnomaly(double eccentricAnomaly, double eccentricity)
     {
         return 2.0 * std::atan2(                                                     //
@@ -87,13 +88,29 @@ public:
             op.incliniation,
             r};
     }
-
+    //TODO: this is a simplification over a orbit derived from an object "falling" around a central mass and having its speed derived from 
     static auto getEulerAngelsAtJulianDay(const OrbitalParameters& op, double day)
     {
         // orbital period T = 2PI*sqrt(a^3/GM), a == semi-major axis
         auto   siderealOrbitPeriod = 365.0;
         double meanMotion          = 2.0 * std::atan(1.0) *4.0 / siderealOrbitPeriod;
         double currentMeanAnomaly  = getMeanAnomaly(op) + meanMotion * day; //(day == jd - m_epoch;)
+
+        double eccentricAnomaly = getEccentricAnomaly(currentMeanAnomaly, op.eccentricity);
+
+
+        return getEulerAnglesFromEccentricAnomaly(op, eccentricAnomaly);
+    }
+    /**
+     * Get the angle on the orbit at a given percentage of the orbital period 
+     */
+
+    static auto getEulerAngelsAtFraction(const OrbitalParameters& op, double period_fraction)
+    {
+        // orbital period T = 2PI*sqrt(a^3/GM), a == semi-major axis
+        
+        double meanMotion          = 2.0 * std::atan(1.0) * 4.0 ;
+        double currentMeanAnomaly = getMeanAnomaly(op) + meanMotion * period_fraction;
 
         double eccentricAnomaly = getEccentricAnomaly(currentMeanAnomaly, op.eccentricity);
 

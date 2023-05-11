@@ -20,8 +20,9 @@ class MSGE(ConanFile):
                 ,("vulkan-loader/1.3.239.0")
                 ,("glfw/3.3.2")
                 ,("glew/2.1.0")
-                ,("vsg/1.0.0")
+                ,("vsg/1.0.3")
                 ,("glslang/11.5.0")
+                ,("sdl/2.26.1")
                 ]
     generators = "cmake_find_package_multi"
     
@@ -29,10 +30,13 @@ class MSGE(ConanFile):
         self.options['fmt'].header_only = True
         self.options['spdlog'].header_only = True
         self.options['vsg'].shared = False
+        self.options['vsg'].shader_compiler = True
         #self.options['imgui'].shared = True
         #self.options['vulkan-loader'].shared = True
     def imports(self):    
         self.copy("*.dll", "bin", "bin")
         self.copy("imgui_impl_glfw.*", dst="bindings", src="./res/bindings")
         self.copy("imgui_impl_vulkan.*", dst="bindings", src="./res/bindings")
+        self.copy("imgui_impl_open*", dst="bindings", src="./res/bindings")
+        self.copy("imgui_impl_sdl.*", dst="bindings", src="./res/bindings")
      

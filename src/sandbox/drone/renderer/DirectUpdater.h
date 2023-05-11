@@ -38,13 +38,7 @@ public:
         }
         else if (rm.path == "sphere")
         {
-            // node = createLines({});
             node = builder->createSphere(geom_info);
-        }
-        else if (rm.path == "orbit")
-        {
-            node = createLines({});
-            // node = builder->createSphere(geom_info);
         }
         else
         {
@@ -57,14 +51,10 @@ public:
         return new_object;
     }
 
-    auto makeOrbit(const OrbitalParameters& orbit, const RenderModel& rm)
+    auto makeOrbit(const OrbitalParameters& orbit)
     {
         auto              new_object = SceneObject::create();
-        vsg::GeometryInfo geom_info;
-        geom_info.position = gmtlToVsg(rm.offset);
-        vsg::ref_ptr<vsg::Node> node;
-        // create line-geometry for orbit from OrbitalParameters
-        node = createOrbit(orbit, {});
+        auto node = createOrbit(orbit, {});
         threads->add(CompileOperation::create(viewer, new_object, node));
         return new_object;
     }
@@ -83,23 +73,20 @@ public:
                 root->addChild(new_object);
                 objects.emplace(entity, new_object);
             }
-            objects.at(entity)->update(gmtlToVsgd(pos.position), vsg::dvec3{1.0, 1.0, 1.0});
+            objects.at(entity)->update(gmtlToVsgd(pos.position), vsg::dvec3{rm.scale, rm.scale, rm.scale});
         }
         // all Orbits
-        for (const auto& [entity, orbits, rm] : registry.view<OrbitalParameters, RenderModel>().each())
+        for (const auto& [entity, orbits] : registry.view<OrbitalParameters>().each())
         {
             if (!objects.contains(entity))
             {
                 builder->options = {};
                 // create
-                auto new_object = makeOrbit(orbits, rm);
+                auto new_object = makeOrbit(orbits);
                 root->addChild(new_object);
                 objects.emplace(entity, new_object);
             }
-            // objects.at(entity)->update(gmtlToVsgd(pos.position), vsg::dvec3{1.0, 1.0, 1.0});
         }
-
-
         root->accept(*this);
     }
 

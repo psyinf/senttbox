@@ -7,6 +7,12 @@
 #include <thread>
 #include <vsg/all.h>
 
+/// <summary>
+/// DEPRECATED
+/// </summary>
+/// <typeparam name="DATA_TYPE"></typeparam>
+/// <param name="v"></param>
+/// <returns></returns>
 template <class DATA_TYPE>
 vsg::t_vec3<DATA_TYPE> gmtlToVsg(const gmtl::Vec<DATA_TYPE, 3>& v)
 {

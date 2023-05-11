@@ -5,7 +5,8 @@
         [
         "physics",
         "update_renderer",
-        "gravitation"
+        "gravitation",
+		"orbiters"
         ],
 	"name": "sample_scene",
 	"scene_file": "data/ent1.se"

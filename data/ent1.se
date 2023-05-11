@@ -1,0 +1,41 @@
+{
+    "value0": 4,
+    "value1": 4294967295,
+    "value2": 0,
+    "value3": 1,
+    "value4": 2,
+    "value5": 0,
+    "value6": 0,
+    "value7": 0,
+    "value8": 3,
+    "value9": 0,
+    "value10": {
+        "ecc": 0.0,
+        "semi-major": 50.0,
+        "inclination": 0.0,
+        "arg-periapsis": 0.0,
+        "long-asc-node": 0.0,
+        "mean-longitude": 0.0,
+        "epoch": 0.0
+    },
+    "value11": 1,
+    "value12": {
+        "ecc": 0.05,
+        "semi-major": 250.0,
+        "inclination": 0.0,
+        "arg-periapsis": 0.0,
+        "long-asc-node": 0.0,
+        "mean-longitude": 0.0,
+        "epoch": 0.0
+    },
+    "value13": 2,
+    "value14": {
+        "ecc": 0.725,
+        "semi-major": 150.0,
+        "inclination": 0.0,
+        "arg-periapsis": 0.0,
+        "long-asc-node": 0.0,
+        "mean-longitude": 0.0,
+        "epoch": 0.0
+    }
+}
