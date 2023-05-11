@@ -1,6 +1,6 @@
 #pragma once
 #include <gmtl/gmtl.h>
-
+#include <span>
 
 namespace gmtl
 {

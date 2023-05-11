@@ -43,7 +43,9 @@ void saveScene(std::string_view file, Scenario scenario)
 
     else if (scenario == Scenario::ORBITS)
     {
-        scene.makeEntity<OrbitalParameters, RenderModel>({1.0, 5000, 0.0, 0.0, 0.0}, {.path = "orbit"});
+        scene.makeEntity<OrbitalParameters, RenderModel>({0.0, 50, 0.0, 0.0, 0.0}, {.path = "orbit"});
+        scene.makeEntity<OrbitalParameters, RenderModel>({0.05, 250, 0.0, 0.0, 0.0}, {.path = "orbit"});
+        scene.makeEntity<OrbitalParameters, RenderModel>({0.725, 150, 0.0, 0.0, 0.0}, {.path = "orbit"});
     }
 
     else if (scenario == Scenario::GRAV_TEST)
@@ -96,7 +98,7 @@ public:
         // create rendermodels
 
 
-        viewer.setup(updateQueue);
+        viewer.setup(scene.getRegistry());
     }
 
     void runSystems()

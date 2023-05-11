@@ -1,5 +1,5 @@
 #pragma once
-#include "SceneUpdater.h"
+#include "DirectUpdater.h"
 
 #include <functional>
 #include <vsg/all.h>
@@ -8,7 +8,7 @@ class ViewerCore
 
 
 public:
-    void setup(UpdateQueue& queue)
+    void setup(entt::registry& reg)
     {
         // options->paths         = {R"(e:\develop\install\vsgRenderSandbox\bin\data\)"};
         options->sharedObjects = vsg::SharedObjects::create();
@@ -35,7 +35,7 @@ public:
         viewer->addEventHandler(vsg::Trackball::create(camera));
 
 
-        updater = SceneUpdater::create(sceneRoot, viewer, queue);
+        updater = DirectUpdater::create(sceneRoot, viewer, reg); // SceneUpdater::create(sceneRoot, viewer, queue);
         viewer->addEventHandler(updater);
     }
 
@@ -72,7 +72,7 @@ private:
     vsg::ref_ptr<vsg::Viewer>  viewer    = vsg::Viewer::create();
     vsg::ref_ptr<vsg::Options> options   = vsg::Options::create();
     vsg::ref_ptr<vsg::Group>   sceneRoot = vsg::Group::create();
-    vsg::ref_ptr<SceneUpdater> updater;
+    vsg::ref_ptr<vsg::Visitor> updater;
 
     vsg::ref_ptr<vsg::Camera> camera;
     bool                      firstFrame = true;
