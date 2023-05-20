@@ -31,12 +31,23 @@ public:
 
         camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 
-        viewer->addEventHandler(vsg::CloseHandler::create(viewer));
-        viewer->addEventHandler(vsg::Trackball::create(camera));
-
-
         updater = DirectUpdater::create(sceneRoot, viewer, reg); // SceneUpdater::create(sceneRoot, viewer, queue);
         viewer->addEventHandler(updater);
+
+        auto commandGraph = vsg::CommandGraph::create(window);
+        auto renderGraph  = vsg::RenderGraph::create(window);
+        commandGraph->addChild(renderGraph);
+    
+         // create the normal 3D view of the scene
+        auto view = vsg::View::create(camera);
+        view->addChild(vsg::createHeadlight());
+        view->addChild(sceneRoot);
+
+        renderGraph->addChild(view);
+        viewer->addEventHandler(vsg::CloseHandler::create(viewer));
+        viewer->addEventHandler(vsg::Trackball::create(camera));
+        viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
+        viewer->compile();
     }
 
 
@@ -44,13 +55,7 @@ public:
     {
         if (firstFrame)
         {
-            // create a command graph to render the scene on specified window
-            auto commandGraph = vsg::createCommandGraphForView(viewer->windows().front(), camera, sceneRoot);
-            viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
-
-            // compile all the the Vulkan objects and transfer data required to render the scene
-            viewer->compile();
-            firstFrame = false;
+           firstFrame = false;
         }
         bool advance = viewer->advanceToNextFrame();
         if (advance)
