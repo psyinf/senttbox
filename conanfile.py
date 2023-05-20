@@ -20,7 +20,8 @@ class MSGE(ConanFile):
                 ,("vulkan-loader/1.3.239.0")
                 ,("glfw/3.3.2")
                 ,("glew/2.1.0")
-                ,("vsg/1.0.3")
+                ,("vsg/1.0.5")
+                ,("vsgImGui/1.0.0")
                 ,("glslang/11.5.0")
                 ,("sdl/2.26.1")
                 ]

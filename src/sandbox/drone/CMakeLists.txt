@@ -10,6 +10,7 @@ add_executable(${APP_NAME}
 )
 
 find_package(vsg CONFIG REQUIRED)
+find_package(vsgImGui CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(glslang CONFIG REQUIRED)
@@ -21,6 +22,7 @@ target_link_libraries (${APP_NAME}
 		spdlog::spdlog_header_only
 		EnTT::EnTT
 		vsg::vsg
+		vsgImGui::vsgImGui
 		glslang::glslang
 		glslang::SPIRV
 		cereal::cereal

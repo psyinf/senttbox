@@ -1,8 +1,10 @@
 #pragma once
 #include "DirectUpdater.h"
-
+#include <vsgImGui/RenderImGui.h>
 #include <functional>
 #include <vsg/all.h>
+#include "Gui.h"
+
 class ViewerCore
 {
 
@@ -37,13 +39,22 @@ public:
         auto commandGraph = vsg::CommandGraph::create(window);
         auto renderGraph  = vsg::RenderGraph::create(window);
         commandGraph->addChild(renderGraph);
-    
-         // create the normal 3D view of the scene
+
+        // create the normal 3D view of the scene
         auto view = vsg::View::create(camera);
         view->addChild(vsg::createHeadlight());
         view->addChild(sceneRoot);
 
         renderGraph->addChild(view);
+
+        {
+            auto params      = Params::create();
+            auto renderImGui = vsgImGui::RenderImGui::create(window, MyGui::create(params, options));
+            renderGraph->addChild(renderImGui);
+            // Add the ImGui event handler first to handle events early
+            viewer->addEventHandler(vsgImGui::SendEventsToImGui::create());
+        }
+
         viewer->addEventHandler(vsg::CloseHandler::create(viewer));
         viewer->addEventHandler(vsg::Trackball::create(camera));
         viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
@@ -55,7 +66,7 @@ public:
     {
         if (firstFrame)
         {
-           firstFrame = false;
+            firstFrame = false;
         }
         bool advance = viewer->advanceToNextFrame();
         if (advance)
