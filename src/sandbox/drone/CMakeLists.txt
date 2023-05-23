@@ -15,6 +15,7 @@ find_package(EnTT CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(glslang CONFIG REQUIRED)
 find_package(cereal CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 target_link_libraries (${APP_NAME} 
 	PRIVATE				
@@ -26,7 +27,7 @@ target_link_libraries (${APP_NAME}
 		glslang::glslang
 		glslang::SPIRV
 		cereal::cereal
-		
+		fmt::fmt		
 )
 
 target_include_directories(${APP_NAME}

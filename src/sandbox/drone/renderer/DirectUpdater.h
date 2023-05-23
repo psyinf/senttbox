@@ -76,6 +76,7 @@ public:
             objects.at(entity)->update(gmtlToVsgd(pos.position), vsg::dvec3{rm.scale, rm.scale, rm.scale});
         }
         // all Orbits
+        //TODO: update orbits via entt update mechanism
         for (const auto& [entity, orbits] : registry.view<OrbitalParameters>().each())
         {
             if (!objects.contains(entity))

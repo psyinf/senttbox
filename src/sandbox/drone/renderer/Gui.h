@@ -11,11 +11,11 @@
 struct Params : public vsg::Inherit<vsg::Object, Params>
 {
     bool     showGui              = true; // you can toggle this with your own EventHandler and key
-    bool     showDemoWindow       = false;
-    bool     showSecondWindow     = false;
-    bool     showImPlotDemoWindow = false;
+    bool     showDemoWindow       = true;
+    bool     showSecondWindow     = true;
+    bool     showImPlotDemoWindow = true;
     bool     showLogoWindow       = true;
-    bool     showImagesWindow     = false;
+    bool     showImagesWindow     = true;
     float    clearColor[3]{0.2f, 0.2f, 0.4f}; // Unfortunately, this doesn't change dynamically in vsg
     uint32_t counter = 0;
     float    dist    = 0.f;
@@ -43,6 +43,8 @@ public:
     // Example here taken from the Dear imgui comments (mostly)
     void record(vsg::CommandBuffer& cb) const override
     {
+
+        
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         if (params->showGui)
         {

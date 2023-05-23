@@ -3,7 +3,7 @@
 #include <vsgImGui/RenderImGui.h>
 #include <functional>
 #include <vsg/all.h>
-#include "Gui.h"
+#include "OrbitEditorGui.h"
 
 class ViewerCore
 {
@@ -48,8 +48,8 @@ public:
         renderGraph->addChild(view);
 
         {
-            auto params      = Params::create();
-            auto renderImGui = vsgImGui::RenderImGui::create(window, MyGui::create(params, options));
+           
+            auto renderImGui = vsgImGui::RenderImGui::create(window, OrbitEditorGui::create(reg));
             renderGraph->addChild(renderImGui);
             // Add the ImGui event handler first to handle events early
             viewer->addEventHandler(vsgImGui::SendEventsToImGui::create());
