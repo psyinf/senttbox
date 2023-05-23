@@ -12,6 +12,4 @@ void serialize(Archive& archive, OrbitalParameters& op)
     archive(cereal::make_nvp("arg-periapsis", op.longPA));
     archive(cereal::make_nvp("long-asc-node", op.longAN));
     archive(cereal::make_nvp("mean-longitude", op.meanLongitude));
-    archive(cereal::make_nvp("epoch", op.epoch));
-
 }

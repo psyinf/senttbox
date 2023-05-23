@@ -188,8 +188,8 @@ auto linePipeline(vsg::ref_ptr<const vsg::Options> options)
 }
 vsg::ref_ptr<vsg::Node> createOrbit(const OrbitalParameters& op, vsg::ref_ptr<const vsg::Options> options)
 {
-
-    static auto scenegraph = linePipeline(options);
+    //FIXME: currently we are creating a new pipeline for each orbit. 
+    auto scenegraph = linePipeline(options);
     // set up model transformation node
     auto transform = vsg::MatrixTransform::create(); // VK_SHADER_STAGE_VERTEX_BIT
 

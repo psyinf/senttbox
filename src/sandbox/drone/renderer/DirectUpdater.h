@@ -59,8 +59,28 @@ public:
         return new_object;
     }
 
+    void updateOrbit(entt::registry& r, entt::entity e) {
 
-    void apply(vsg::FrameEvent& frame)
+        auto obj = objects.at(e);
+        auto iter = std::find(root->children.begin(), root->children.end(), obj);
+        if (iter != root->children.end())
+        {
+            auto old = *iter;
+            auto orbit = makeOrbit(registry.get<OrbitalParameters>(e));
+            objects[e] = orbit;
+            *iter      = orbit;
+        }
+
+    }
+    void removeOrbit(entt::registry& r, entt::entity e)
+    {
+        auto obj = objects.at(e);
+        root->children.erase(std::remove(root->children.begin(), root->children.end(), obj), root->children.end());
+        
+    }
+
+
+    void apply(vsg::FrameEvent& frame) override
     {
         // all RenderModels
         for (const auto& [entity, pos, rm] : registry.view<StaticTransform, RenderModel>().each())
@@ -81,7 +101,9 @@ public:
         {
             if (!objects.contains(entity))
             {
-                builder->options = {};
+                
+                registry.on_update<OrbitalParameters>().connect<&DirectUpdater::updateOrbit>(this);
+                registry.on_destroy<OrbitalParameters>().connect<&DirectUpdater::removeOrbit>(this);
                 // create
                 auto new_object = makeOrbit(orbits);
                 root->addChild(new_object);

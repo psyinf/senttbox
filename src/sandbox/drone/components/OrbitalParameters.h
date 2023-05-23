@@ -4,7 +4,7 @@
 
 struct OrbitalParameters
 {
-    //orbital parameters
+    // orbital parameters
     double eccentricity;
     double semimajor_axis;
     double incliniation;
@@ -12,7 +12,6 @@ struct OrbitalParameters
     double longPA; ///> longitude of periapsis, basically the orientation of the ellipse
     /// time specific parameters
     double meanLongitude{}; /** Mean longitude is the ecliptic longitude at which an orbiting body could be found if its orbit were circular and free of perturbations. While nominally a simple longitude, in practice the mean longitude does not correspond to any one physical angle.**/
-    double epoch{};		 /** The epoch is the time at which the orbital elements are defined. The epoch is usually given as a Julian date.**/
 };
 
 struct EulerCoordinates
