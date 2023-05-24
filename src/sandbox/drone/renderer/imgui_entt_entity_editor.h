@@ -1,308 +1,365 @@
 // for the license, see the end of the file
 #pragma once
 
+#include <entt/entt.hpp>
+#include <functional>
+#include <vsgImGui/imgui.h>
 #include <map>
 #include <set>
-#include <functional>
 #include <string>
 
-#include <entt/entt.hpp>
-#include <vsgImGui/imgui.h>
-
-#ifndef MM_IEEE_ASSERT
-	#define MM_IEEE_ASSERT(x) assert(x)
-#endif
 
 constexpr auto MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY = "MM_IEEE_ENTITY";
 
-#ifndef MM_IEEE_ENTITY_WIDGET
-	#define MM_IEEE_ENTITY_WIDGET ::MM::EntityWidget
-#endif
 
-namespace MM {
+namespace MM
+{
+//TODO: put to registry
+struct EditorState
+{
+    entt::entity selected; ///the entity currently being edited
+};
 
+static EditorState state;
 template <class EntityType>
 inline void EntityWidget(EntityType& e, entt::basic_registry<EntityType>& reg, bool dropTarget = false)
 {
-	ImGui::PushID(static_cast<int>(entt::to_integral(e)));
+    ImGui::PushID(static_cast<int>(entt::to_integral(e)));
 
-	if (reg.valid(e)) {
-		ImGui::Text("ID: %d", entt::to_integral(e));
-	} else {
-		ImGui::Text("Invalid Entity");
-	}
+    if (reg.valid(e))
+    {
+        //ImGui::Text("ID: %d", entt::to_integral(e));
+        if (ImGui::Button(fmt::format("ID: {}", entt::to_integral(e)).c_str()))
+        {
+            state.selected = e;
+        }
+    }
+    else
+    {
+        ImGui::Text("Invalid Entity");
+    }
+    /*
+    if (reg.valid(e))
+    {
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+        {
+            ImGui::SetDragDropPayload(MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY, &e, sizeof(e));
+            ImGui::Text("ID: %d", entt::to_integral(e));
+            ImGui::EndDragDropSource();
+        }
+    }
+    */
+    if (dropTarget && ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY))
+        {
+            e = *(EntityType*)payload->Data;
+            
+        }
 
-	if (reg.valid(e)) {
-		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-			ImGui::SetDragDropPayload(MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY, &e, sizeof(e));
-			ImGui::Text("ID: %d", entt::to_integral(e));
-			ImGui::EndDragDropSource();
-		}
-	}
-
-	if (dropTarget && ImGui::BeginDragDropTarget()) {
-		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY)) {
-			e = *(EntityType*)payload->Data;
-		}
-
-		ImGui::EndDragDropTarget();
-	}
-
-	ImGui::PopID();
+        ImGui::EndDragDropTarget();
+    }
+    
+    ImGui::PopID();
 }
 
 template <class Component, class EntityType>
-void ComponentEditorWidget([[maybe_unused]] entt::basic_registry<EntityType>& registry, [[maybe_unused]] EntityType entity) {}
+void ComponentEditorWidget([[maybe_unused]] entt::basic_registry<EntityType>& registry, [[maybe_unused]] EntityType entity)
+{
+}
 
 template <class Component, class EntityType>
 void ComponentAddAction(entt::basic_registry<EntityType>& registry, EntityType entity)
 {
-	registry.template emplace<Component>(entity);
+    registry.template emplace<Component>(entity);
 }
 
 template <class Component, class EntityType>
 void ComponentRemoveAction(entt::basic_registry<EntityType>& registry, EntityType entity)
 {
-	registry.template remove<Component>(entity);
+    registry.template remove<Component>(entity);
 }
 
 template <class EntityType>
-class EntityEditor {
+class EntityEditor
+{
 public:
-	using Registry = entt::basic_registry<EntityType>;
-	using ComponentTypeID = entt::id_type;
+    using Registry        = entt::basic_registry<EntityType>;
+    using ComponentTypeID = entt::id_type;
 
-	struct ComponentInfo {
-		using Callback = std::function<void(Registry&, EntityType)>;
-		std::string name;
-		Callback widget, create, destroy;
-	};
+    struct ComponentInfo
+    {
+        using Callback = std::function<void(Registry&, EntityType)>;
+        std::string name;
+        Callback    widget;
+        Callback    create;
+        Callback    destroy;
+    };
 
-	bool show_window = true;
+    bool show_window = true;
 
 private:
-	std::map<ComponentTypeID, ComponentInfo> component_infos;
+    std::map<ComponentTypeID, ComponentInfo> component_infos;
 
-	bool entityHasComponent(Registry& registry, EntityType& entity, ComponentTypeID type_id)
-	{
-		const auto* storage_ptr = registry.storage(type_id);
-		return storage_ptr != nullptr && storage_ptr->contains(entity);
-	}
+    bool entityHasComponent(Registry& registry, EntityType& entity, ComponentTypeID type_id)
+    {
+        const auto* storage_ptr = registry.storage(type_id);
+        return storage_ptr != nullptr && storage_ptr->contains(entity);
+    }
 
 public:
-	template <class Component>
-	ComponentInfo& registerComponent(const ComponentInfo& component_info)
-	{
-		auto index = entt::type_hash<Component>::value();
-		auto insert_info = component_infos.insert_or_assign(index, component_info);
-		MM_IEEE_ASSERT(insert_info.second);
-		return std::get<ComponentInfo>(*insert_info.first);
-	}
+    template <class Component>
+    ComponentInfo& registerComponent(const ComponentInfo& component_info)
+    {
+        auto index       = entt::type_hash<Component>::value();
+        auto insert_info = component_infos.insert_or_assign(index, component_info);
+        return std::get<ComponentInfo>(*insert_info.first);
+    }
 
-	template <class Component>
-	ComponentInfo& registerComponent(const std::string& name, typename ComponentInfo::Callback widget)
-	{
-		return registerComponent<Component>(ComponentInfo{
-			name,
-			widget,
-			ComponentAddAction<Component, EntityType>,
-			ComponentRemoveAction<Component, EntityType>,
-		});
-	}
+    template <class Component>
+    ComponentInfo& registerComponent(const std::string& name, typename ComponentInfo::Callback widget)
+    {
+        return registerComponent<Component>(ComponentInfo{
+            name,
+            widget,
+            ComponentAddAction<Component, EntityType>,
+            ComponentRemoveAction<Component, EntityType>,
+        });
+    }
 
-	template <class Component>
-	ComponentInfo& registerComponent(const std::string& name)
-	{
-		return registerComponent<Component>(name, ComponentEditorWidget<Component, EntityType>);
-	}
+    template <class Component>
+    ComponentInfo& registerComponent(const std::string& name)
+    {
+        return registerComponent<Component>(name, ComponentEditorWidget<Component, EntityType>);
+    }
 
-	void renderEditor(Registry& registry, EntityType& e)
-	{
-		ImGui::TextUnformatted("Editing:");
-		ImGui::SameLine();
+    void renderEditor(Registry& registry, EntityType& e)
+    {
+        ImGui::TextUnformatted("Editing:");
+        ImGui::SameLine();
 
-		MM_IEEE_ENTITY_WIDGET(e, registry, true);
+        if (state.selected != entt::null)
+        {
+            e = state.selected;
+        }
 
-		if (ImGui::Button("New")) {
-			e = registry.create();
-		}
-		if (registry.valid(e)) {
-			ImGui::SameLine();
 
-			if (ImGui::Button("Clone")) {
-				auto old_e = e;
-				e = registry.create();
+        if (ImGui::Button("New"))
+        {
+            e = registry.create();
+        }
+        if (registry.valid(e))
+        {
+            ImGui::SameLine();
 
-				// create a copy of an entity component by component
-				for (auto &&curr: registry.storage()) {
-					if (auto &storage = curr.second; storage.contains(old_e)) {
-						// TODO: do something with the return value. returns false on failure.
-						storage.emplace(e, storage.get(old_e));
-					}
-				}
-			}
-			ImGui::SameLine();
+            if (ImGui::Button("Clone"))
+            {
+                auto old_e = e;
+                e          = registry.create();
 
-			ImGui::Dummy({10, 0}); // space destroy a bit, to not accidentally click it
-			ImGui::SameLine();
+                // create a copy of an entity component by component
+                for (auto&& curr : registry.storage())
+                {
+                    if (auto& storage = curr.second; storage.contains(old_e))
+                    {
+                        // TODO: do something with the return value. returns false on failure.
+                        storage.emplace(e, storage.get(old_e));
+                    }
+                }
+            }
+            ImGui::SameLine();
 
-			// red button
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.15f, 0.15f, 1.f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.3f, 0.3f, 1.f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.f, 0.2f, 0.2f, 1.f));
-			if (ImGui::Button("Destroy")) {
-				registry.destroy(e);
-				e = entt::null;
-			}
-			ImGui::PopStyleColor(3);
-		}
+            ImGui::Dummy({10, 0}); // space destroy a bit, to not accidentally click it
+            ImGui::SameLine();
 
-		ImGui::Separator();
+            // red button
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.65f, 0.15f, 0.15f, 1.f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.3f, 0.3f, 1.f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.f, 0.2f, 0.2f, 1.f));
+            if (ImGui::Button("Destroy"))
+            {
+                registry.destroy(e);
+                e = entt::null;
+            }
+            ImGui::PopStyleColor(3);
+        }
 
-		if (registry.valid(e)) {
-			ImGui::PushID(static_cast<int>(entt::to_integral(e)));
-			std::map<ComponentTypeID, ComponentInfo> has_not;
-			for (auto& [component_type_id, ci] : component_infos) {
-				if (entityHasComponent(registry, e, component_type_id)) {
-					ImGui::PushID(component_type_id);
-					if (ImGui::Button("-")) {
-						ci.destroy(registry, e);
-						ImGui::PopID();
-						continue; // early out to prevent access to deleted data
-					} else {
-						ImGui::SameLine();
-					}
+        ImGui::Separator();
 
-					if (ImGui::CollapsingHeader(ci.name.c_str())) {
-						ImGui::Indent(30.f);
-						ImGui::PushID("Widget");
-						ci.widget(registry, e);
-						ImGui::PopID();
-						ImGui::Unindent(30.f);
-					}
-					ImGui::PopID();
-				} else {
-					has_not[component_type_id] = ci;
-				}
-			}
+        if (registry.valid(e))
+        {
+            ImGui::PushID(static_cast<int>(entt::to_integral(e)));
+            std::map<ComponentTypeID, ComponentInfo> has_not;
+            for (auto& [component_type_id, ci] : component_infos)
+            {
+                if (entityHasComponent(registry, e, component_type_id))
+                {
+                    ImGui::PushID(component_type_id);
+                    if (ImGui::Button("-"))
+                    {
+                        ci.destroy(registry, e);
+                        ImGui::PopID();
+                        continue; // early out to prevent access to deleted data
+                    }
+                    else
+                    {
+                        ImGui::SameLine();
+                    }
 
-			if (!has_not.empty()) {
-				if (ImGui::Button("+ Add Component")) {
-					ImGui::OpenPopup("Add Component");
-				}
+                    if (ImGui::CollapsingHeader(ci.name.c_str()))
+                    {
+                        ImGui::Indent(30.f);
+                        ImGui::PushID("Widget");
+                        ci.widget(registry, e);
+                        ImGui::PopID();
+                        ImGui::Unindent(30.f);
+                    }
+                    ImGui::PopID();
+                }
+                else
+                {
+                    has_not[component_type_id] = ci;
+                }
+            }
 
-				if (ImGui::BeginPopup("Add Component")) {
-					ImGui::TextUnformatted("Available:");
-					ImGui::Separator();
+            if (!has_not.empty())
+            {
+                if (ImGui::Button("+ Add Component"))
+                {
+                    ImGui::OpenPopup("Add Component");
+                }
 
-					for (auto& [component_type_id, ci] : has_not) {
-						ImGui::PushID(component_type_id);
-						if (ImGui::Selectable(ci.name.c_str())) {
-							ci.create(registry, e);
-						}
-						ImGui::PopID();
-					}
-					ImGui::EndPopup();
-				}
-			}
-			ImGui::PopID();
-		}
-	}
+                if (ImGui::BeginPopup("Add Component"))
+                {
+                    ImGui::TextUnformatted("Available:");
+                    ImGui::Separator();
 
-	void renderEntityList(Registry& registry, std::set<ComponentTypeID>& comp_list)
-	{
-		ImGui::Text("Components Filter:");
-		ImGui::SameLine();
-		if (ImGui::SmallButton("clear")) {
-			comp_list.clear();
-		}
+                    for (auto& [component_type_id, ci] : has_not)
+                    {
+                        ImGui::PushID(component_type_id);
+                        if (ImGui::Selectable(ci.name.c_str()))
+                        {
+                            ci.create(registry, e);
+                        }
+                        ImGui::PopID();
+                    }
+                    ImGui::EndPopup();
+                }
+            }
+            ImGui::PopID();
+        }
+    }
 
-		ImGui::Indent();
+    void renderEntityList(Registry& registry, std::set<ComponentTypeID>& comp_list)
+    {
+        ImGui::Text("Components Filter:");
+        ImGui::SameLine();
+        if (ImGui::SmallButton("clear"))
+        {
+            comp_list.clear();
+        }
 
-		for (const auto& [component_type_id, ci] : component_infos) {
-			bool is_in_list = comp_list.count(component_type_id);
-			bool active = is_in_list;
+        ImGui::Indent();
 
-			ImGui::Checkbox(ci.name.c_str(), &active);
+        for (const auto& [component_type_id, ci] : component_infos)
+        {
+            bool is_in_list = comp_list.count(component_type_id);
+            bool active     = is_in_list;
 
-			if (is_in_list && !active) { // remove
-				comp_list.erase(component_type_id);
-			} else if (!is_in_list && active) { // add
-				comp_list.emplace(component_type_id);
-			}
-		}
+            ImGui::Checkbox(ci.name.c_str(), &active);
 
-		ImGui::Unindent();
-		ImGui::Separator();
+            if (is_in_list && !active)
+            { // remove
+                comp_list.erase(component_type_id);
+            }
+            else if (!is_in_list && active)
+            { // add
+                comp_list.emplace(component_type_id);
+            }
+        }
 
-		if (comp_list.empty()) {
-			ImGui::Text("Orphans:");
-			registry.each([&registry](auto e){
-				if (registry.orphan(e)) {
-					MM_IEEE_ENTITY_WIDGET(e, registry, false);
-				}
-			});
-		} else {
-			entt::runtime_view view{};
-			for (const auto type : comp_list) {
-				auto* storage_ptr = registry.storage(type);
-				if (storage_ptr != nullptr) {
-					view.iterate(*storage_ptr);
-				}
-			}
+        ImGui::Unindent();
+        ImGui::Separator();
 
-			// TODO: add support for exclude
+        if (comp_list.empty())
+        {
+            ImGui::Text("Orphans:");
+            registry.each([&registry](auto e) {
+                if (registry.orphan(e))
+                {
+                    EntityWidget(e, registry, false);
+                }
+            });
+        }
+        else
+        {
+            entt::runtime_view view{};
+            for (const auto type : comp_list)
+            {
+                auto* storage_ptr = registry.storage(type);
+                if (storage_ptr != nullptr)
+                {
+                    view.iterate(*storage_ptr);
+                }
+            }
 
-			ImGui::Text("%lu Entities Matching:", view.size_hint());
+            // TODO: add support for exclude
 
-			if (ImGui::BeginChild("entity list")) {
-				for (auto e : view) {
-					MM_IEEE_ENTITY_WIDGET(e, registry, false);
-				}
-			}
-			ImGui::EndChild();
-		}
-	}
+            ImGui::Text("%lu Entities Matching:", view.size_hint());
 
-	[[deprecated("Use renderEditor() instead. And manage the window yourself.")]]
-	void render(Registry& registry, EntityType& e)
-	{
-		if (show_window) {
-			if (ImGui::Begin("Entity Editor", &show_window)) {
-				renderEditor(registry, e);
-			}
-			ImGui::End();
-		}
-	}
+            if (ImGui::BeginChild("entity list"))
+            {
+                for (auto e : view)
+                {
+                    EntityWidget(e, registry, false);
+                }
+            }
+            ImGui::EndChild();
+        }
+    }
 
-	// displays both, editor and list
-	// uses static internally, use only as a quick way to get going!
-	void renderSimpleCombo(Registry& registry, EntityType& e)
-	{
-		if (show_window) {
-			ImGui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
-			if (ImGui::Begin("Entity Editor", &show_window)) {
-				if (ImGui::BeginChild("list", {200, 0}, true)) {
-					static std::set<ComponentTypeID> comp_list;
-					renderEntityList(registry, comp_list);
-				}
-				ImGui::EndChild();
+    [[deprecated("Use renderEditor() instead. And manage the window yourself.")]] void render(Registry& registry, EntityType& e)
+    {
+        if (show_window)
+        {
+            if (ImGui::Begin("Entity Editor", &show_window))
+            {
+                renderEditor(registry, e);
+            }
+            ImGui::End();
+        }
+    }
 
-				ImGui::SameLine();
+    // displays both, editor and list
+    // uses static internally, use only as a quick way to get going!
+    void renderSimpleCombo(Registry& registry, EntityType& e)
+    {
+        if (show_window)
+        {
+            ImGui::SetNextWindowSize(ImVec2(550, 400), ImGuiCond_FirstUseEver);
+            if (ImGui::Begin("Entity Editor", &show_window))
+            {
+                if (ImGui::BeginChild("list", {200, 0}, true))
+                {
+                    static std::set<ComponentTypeID> comp_list;
+                    renderEntityList(registry, comp_list);
+                }
+                ImGui::EndChild();
 
-				if (ImGui::BeginChild("editor")) {
-					renderEditor(registry, e);
-				}
-				ImGui::EndChild();
+                ImGui::SameLine();
 
-			}
-			ImGui::End();
-		}
-	}
-
+                if (ImGui::BeginChild("editor"))
+                {
+                    renderEditor(registry, e);
+                }
+                ImGui::EndChild();
+            }
+            ImGui::End();
+        }
+    }
 };
 
-} // MM
+} // namespace MM
 
 // MIT License
 

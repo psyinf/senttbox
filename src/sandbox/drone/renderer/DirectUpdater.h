@@ -59,7 +59,7 @@ public:
         return new_object;
     }
 
-    void updateOrbit(entt::registry& r, entt::entity e) {
+    void updateOrbit([[maybe_unused]]entt::registry& r, entt::entity e) {
 
         auto obj = objects.at(e);
         auto iter = std::find(root->children.begin(), root->children.end(), obj);
@@ -96,12 +96,12 @@ public:
             objects.at(entity)->update(gmtlToVsgd(pos.position), vsg::dvec3{rm.scale, rm.scale, rm.scale});
         }
         // all Orbits
-        //TODO: update orbits via entt update mechanism
+
         for (const auto& [entity, orbits] : registry.view<OrbitalParameters>().each())
         {
             if (!objects.contains(entity))
             {
-                
+
                 registry.on_update<OrbitalParameters>().connect<&DirectUpdater::updateOrbit>(this);
                 registry.on_destroy<OrbitalParameters>().connect<&DirectUpdater::removeOrbit>(this);
                 // create
