@@ -3,5 +3,5 @@
 
 struct Orbiter{
     entt::entity orbit{entt::null};
-    double       epoch;
+    double       epoch; //> epoch as fraction of the orbital period of the referenced orbit
 };

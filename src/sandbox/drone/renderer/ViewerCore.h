@@ -27,9 +27,9 @@ public:
 
         viewer->addWindow(window);
         // set up the camera
-        float radius      = 10.0;
+        float radius      = 1e12; //> to encompass currently used correct physical solar-systems scales
         auto  lookAt      = vsg::LookAt::create(vsg::dvec3(0.0, -radius * 3.5, 0.0), vsg::dvec3(), vsg::dvec3(0.0, 0.0, 1.0));
-        auto  perspective = vsg::Perspective::create(30.0, static_cast<double>(window->extent2D().width) / static_cast<double>(window->extent2D().height), /*nearfar ratio*/ 0.00001, 10000.0);
+        auto  perspective = vsg::Perspective::create(30.0, static_cast<double>(window->extent2D().width) / static_cast<double>(window->extent2D().height), /*nearfar ratio*/ 100, 1e14);
 
         camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 
@@ -87,7 +87,7 @@ public:
 private:
     vsg::ref_ptr<vsg::Viewer>  viewer    = vsg::Viewer::create();
     vsg::ref_ptr<vsg::Options> options   = vsg::Options::create();
-    vsg::ref_ptr<vsg::Group>   sceneRoot = vsg::Group::create();
+    vsg::ref_ptr<vsg::MatrixTransform>   sceneRoot = vsg::MatrixTransform::create();
     vsg::ref_ptr<vsg::Visitor> updater;
 
     vsg::ref_ptr<vsg::Camera> camera;

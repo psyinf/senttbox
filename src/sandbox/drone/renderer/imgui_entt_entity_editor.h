@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <fmt/format.h>
 
 
 constexpr auto MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY = "MM_IEEE_ENTITY";
@@ -17,7 +18,7 @@ namespace MM
 //TODO: put to registry
 struct EditorState
 {
-    entt::entity selected; ///the entity currently being edited
+    entt::entity selected{entt::null}; /// the entity currently being edited
 };
 
 static EditorState state;
@@ -28,7 +29,6 @@ inline void EntityWidget(EntityType& e, entt::basic_registry<EntityType>& reg, b
 
     if (reg.valid(e))
     {
-        //ImGui::Text("ID: %d", entt::to_integral(e));
         if (ImGui::Button(fmt::format("ID: {}", entt::to_integral(e)).c_str()))
         {
             state.selected = e;
@@ -37,27 +37,6 @@ inline void EntityWidget(EntityType& e, entt::basic_registry<EntityType>& reg, b
     else
     {
         ImGui::Text("Invalid Entity");
-    }
-    /*
-    if (reg.valid(e))
-    {
-        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-        {
-            ImGui::SetDragDropPayload(MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY, &e, sizeof(e));
-            ImGui::Text("ID: %d", entt::to_integral(e));
-            ImGui::EndDragDropSource();
-        }
-    }
-    */
-    if (dropTarget && ImGui::BeginDragDropTarget())
-    {
-        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY))
-        {
-            e = *(EntityType*)payload->Data;
-            
-        }
-
-        ImGui::EndDragDropTarget();
     }
     
     ImGui::PopID();
@@ -143,7 +122,6 @@ public:
             e = state.selected;
         }
 
-
         if (ImGui::Button("New"))
         {
             e = registry.create();
@@ -205,8 +183,8 @@ public:
                     {
                         ImGui::SameLine();
                     }
-
-                    if (ImGui::CollapsingHeader(ci.name.c_str()))
+                    bool collapsed = (e != entt::null);
+                    if (ImGui::CollapsingHeader(ci.name.c_str()), &collapsed)
                     {
                         ImGui::Indent(30.f);
                         ImGui::PushID("Widget");

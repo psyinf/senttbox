@@ -5,14 +5,15 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/string.hpp>
+#include <components/CentralBody.h>
 #include <components/OrbitalParameters.h>
 #include <components/Orbiter.h>
+#include <components/serializers/CentralBody_cereal.h>
 #include <components/serializers/Kinematic_cereal.h>
 #include <components/serializers/OrbitalParameters_cereal.h>
+#include <components/serializers/Orbiter_cereal.h>
 #include <components/serializers/RenderModel_cereal.h>
 #include <components/serializers/StaticTransform_cereal.h>
-#include <components/serializers/Orbiter_cereal.h>
-
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -50,13 +51,14 @@ void saveScene(std::string_view file, Scenario scenario)
 
     else if (scenario == Scenario::ORBITS)
     {
-        auto o1 = scene.makeEntity<OrbitalParameters>({0.0, 50, 0.0, 0.0, 0.0});
-        auto o2 = scene.makeEntity<OrbitalParameters>({0.05, 250, 0.0, 0.0, 0.0});
-        auto o3 = scene.makeEntity<OrbitalParameters>({0.725, 150, 0.0, 0.0, 0.0});
-        scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o1, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{3.0f}});
-        scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o2, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{4.0f}});
-        scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o3, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{2.0f}});
-     
+        CentralBody sun;
+        auto        cb = scene.makeEntity<CentralBody, RenderModel, StaticTransform>(std::move(sun), {.path = "sphere", .offset{0, 0, 0}, .scale{7e8}}, {});
+        auto        o1 = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.0, 149597870700, 0.0, 0.0, 0.0}, {cb});
+       // auto        o2 = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.05, 250, 0.0, 0.0, 0.0}, {cb});
+       // auto        o3 = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.725, 150, 0.0, 0.0, 0.0}, {cb});
+        scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o1, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{2.0 * 6371000.0f}});
+       // scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o2, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{4.0f}});
+       // scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o3, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{2.0f}});
     }
 
     else if (scenario == Scenario::GRAV_TEST)
@@ -66,7 +68,7 @@ void saveScene(std::string_view file, Scenario scenario)
     }
     auto s1 = std::ofstream{std::string(file)};
     auto x1 = cereal::JSONOutputArchive(s1);
-    scene.save<StaticTransform, Kinematic, RenderModel, OrbitalParameters, Orbiter>(scene.getRegistry(), x1);
+    scene.save<StaticTransform, Kinematic, RenderModel, OrbitalParameters, Orbiter, CentralBodyRef, CentralBody>(scene.getRegistry(), x1);
 }
 
 struct logging
@@ -154,7 +156,7 @@ public:
         {
             auto stream   = std::ifstream{scene_desc.scene_file};
             auto iarchive = cereal::JSONInputArchive(stream);
-            scene.load<StaticTransform, Kinematic, RenderModel, OrbitalParameters, Orbiter>(scene.getRegistry(), iarchive);
+            scene.load<StaticTransform, Kinematic, RenderModel, OrbitalParameters, Orbiter, CentralBodyRef, CentralBody>(scene.getRegistry(), iarchive);
         }
 
 

@@ -82,6 +82,7 @@ public:
 
     void apply(vsg::FrameEvent& frame) override
     {
+        
         // all RenderModels
         for (const auto& [entity, pos, rm] : registry.view<StaticTransform, RenderModel>().each())
         {
@@ -93,7 +94,9 @@ public:
                 root->addChild(new_object);
                 objects.emplace(entity, new_object);
             }
-            objects.at(entity)->update(gmtlToVsgd(pos.position), vsg::dvec3{rm.scale, rm.scale, rm.scale});
+            //TODO: from entity
+            double offset_scale = 50.0;
+            objects.at(entity)->update(gmtlToVsgd(pos.position),vsg::dvec3{rm.scale, rm.scale, rm.scale} * offset_scale);
         }
         // all Orbits
 
