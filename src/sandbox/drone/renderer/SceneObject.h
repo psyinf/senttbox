@@ -16,6 +16,13 @@ public:
        
         this->matrix = vsg::translate(position) * vsg::rotate(vsg::dquat{}) * vsg::scale(scale); // pivot* vsg::translate(- vsg::dvec3{0,0,-0});
     }
+
+    void update(vsg::dvec3 pos)
+    {
+        position = pos;
+
+        this->matrix = vsg::translate(position);
+    }
     
 
 private:

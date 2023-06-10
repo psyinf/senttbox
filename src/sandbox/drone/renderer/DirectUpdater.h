@@ -4,6 +4,8 @@
 #include "SceneObject.h"
 #include "components/OrbitalParameters.h"
 #include "components/RenderModel.h"
+#include "components/CentralBody.h"
+#include "components/Orbiter.h"
 #include "core/Update.h"
 
 class DirectUpdater : public vsg::Inherit<vsg::Visitor, DirectUpdater>
@@ -27,6 +29,7 @@ public:
         vsg::ref_ptr<vsg::Node> node;
         vsg::GeometryInfo       geom_info;
         geom_info.position = gmtlToVsg(rm.offset);
+        geom_info.transform = vsg::scale(rm.scale);
 
         if (rm.path == "cone")
         {
@@ -60,7 +63,8 @@ public:
     }
 
     void updateOrbit([[maybe_unused]]entt::registry& r, entt::entity e) {
-
+        
+        //TODO: use parent to remove itself and re-attach
         auto obj = objects.at(e);
         auto iter = std::find(root->children.begin(), root->children.end(), obj);
         if (iter != root->children.end())
@@ -86,30 +90,57 @@ public:
         // all RenderModels
         for (const auto& [entity, pos, rm] : registry.view<StaticTransform, RenderModel>().each())
         {
+            auto cbr = registry.try_get<Orbiter>(entity);
+            //root entity but parent not yet registered
+            if (cbr != nullptr && cbr->orbit != entt::null && !objects.contains(cbr->orbit) && !objects.contains(entity))
+            {
+                continue;
+            }
             if (!objects.contains(entity))
             {
                 builder->options = {};
                 // create
                 auto new_object = factory(rm);
-                root->addChild(new_object);
+                //special handling of orbits. TODO: maybe generalize root entities 
+                if ( cbr != nullptr)
+                {
+                    objects[cbr->orbit]->addChild(new_object);
+                }
+                else
+                {
+                    root->addChild(new_object);
+                }
+                
                 objects.emplace(entity, new_object);
             }
-            //TODO: from entity
-            double offset_scale = 50.0;
-            objects.at(entity)->update(gmtlToVsgd(pos.position),vsg::dvec3{rm.scale, rm.scale, rm.scale} * offset_scale);
+            
+            objects.at(entity)->update(gmtlToVsgd(pos.position));
         }
         // all Orbits
 
-        for (const auto& [entity, orbits] : registry.view<OrbitalParameters>().each())
+        for (const auto& [entity, orbit] : registry.view<OrbitalParameters>().each())
         {
+            auto cbr = registry.try_get<CentralBodyRef>(entity); 
+            if (cbr != nullptr && cbr->central_body != entt::null && !objects.contains(cbr->central_body) && !objects.contains(entity))
+            {
+                continue;
+            }
+
             if (!objects.contains(entity))
             {
 
                 registry.on_update<OrbitalParameters>().connect<&DirectUpdater::updateOrbit>(this);
                 registry.on_destroy<OrbitalParameters>().connect<&DirectUpdater::removeOrbit>(this);
                 // create
-                auto new_object = makeOrbit(orbits);
-                root->addChild(new_object);
+                auto new_object = makeOrbit(orbit);
+                if (cbr != nullptr)
+                {
+                     objects[cbr->central_body]->addChild(new_object);
+                }
+                else
+                {
+                    root->addChild(new_object);
+                }
                 objects.emplace(entity, new_object);
             }
         }

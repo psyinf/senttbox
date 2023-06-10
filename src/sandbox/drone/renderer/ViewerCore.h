@@ -29,7 +29,7 @@ public:
         // set up the camera
         float radius      = 1e12; //> to encompass currently used correct physical solar-systems scales
         auto  lookAt      = vsg::LookAt::create(vsg::dvec3(0.0, -radius * 3.5, 0.0), vsg::dvec3(), vsg::dvec3(0.0, 0.0, 1.0));
-        auto  perspective = vsg::Perspective::create(30.0, static_cast<double>(window->extent2D().width) / static_cast<double>(window->extent2D().height), /*nearfar ratio*/ 100, 1e14);
+        auto  perspective = vsg::Perspective::create(30.0, static_cast<double>(window->extent2D().width) / static_cast<double>(window->extent2D().height), /*nearfar ratio*/ 100, 1e20);
 
         camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 

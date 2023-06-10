@@ -8,6 +8,6 @@ struct CentralBodyRef
 
 struct CentralBody
 {
-    std::string name{"Some Sun"};
+    std::string name{"The Sun"};
     double      mass{1.989e30};
 };

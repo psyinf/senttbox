@@ -51,14 +51,23 @@ void saveScene(std::string_view file, Scenario scenario)
 
     else if (scenario == Scenario::ORBITS)
     {
-        CentralBody sun;
-        auto        cb = scene.makeEntity<CentralBody, RenderModel, StaticTransform>(std::move(sun), {.path = "sphere", .offset{0, 0, 0}, .scale{7e8}}, {});
-        auto        o1 = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.0, 149597870700, 0.0, 0.0, 0.0}, {cb});
-       // auto        o2 = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.05, 250, 0.0, 0.0, 0.0}, {cb});
-       // auto        o3 = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.725, 150, 0.0, 0.0, 0.0}, {cb});
-        scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o1, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{2.0 * 6371000.0f}});
-       // scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o2, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{4.0f}});
-       // scene.makeEntity<Orbiter, StaticTransform, RenderModel>({o3, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{2.0f}});
+        double      exageration_scale = 100.f;
+        CentralBody sun{"The Sun", 1.989e30};
+        CentralBody earth{"The earth", 5.9722e24};
+        CentralBody moon{"The Moon", 7.348e22};
+        // The sun as central body
+        auto sun_body = scene.makeEntity<CentralBody, RenderModel, StaticTransform>(std::move(sun), {.path = "sphere", .offset{0, 0, 0}, .scale{695.508e6 * exageration_scale}}, {});
+        // orbit around the sun
+        auto o_sun = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.0, 149.6e9, 0.0, 0.0, 0.0}, {sun_body});
+        // earth orbiting sun
+        auto earth_body = scene.makeEntity<CentralBody, Orbiter, StaticTransform, RenderModel>(std::move(earth), {o_sun, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{6356.752e3 * exageration_scale}});
+       
+        // moon orbiting earth
+        auto o_earth    = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.0, 0.3844e6 , 0.0, 0.0, 0.0}, {earth_body});
+
+        auto moon_body = scene.makeEntity<CentralBody, Orbiter, StaticTransform, RenderModel>(std::move(earth), {o_earth, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{1737.5 * exageration_scale}});
+      
+       
     }
 
     else if (scenario == Scenario::GRAV_TEST)
