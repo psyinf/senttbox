@@ -30,7 +30,7 @@ public:
         auto view = scene.getRegistry().view<StaticTransform, Orbiter>();
         for (auto&& [entity, spatial, orbiter] : view.each())
         {
-            orbiter.epoch += 0.0;
+            orbiter.epoch += 0.001;
             //0.0001;
             if (scene.getRegistry().valid(orbiter.orbit)) {
                 auto [orbital_parameters, central_body_ref] = scene.getRegistry().get<OrbitalParameters, CentralBodyRef>(orbiter.orbit);

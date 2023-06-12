@@ -2,10 +2,10 @@
 #include "Helpers.h"
 #include "LoadOperation.h"
 #include "SceneObject.h"
-#include "components/OrbitalParameters.h"
-#include "components/RenderModel.h"
 #include "components/CentralBody.h"
+#include "components/OrbitalParameters.h"
 #include "components/Orbiter.h"
+#include "components/RenderModel.h"
 #include "core/Update.h"
 
 class DirectUpdater : public vsg::Inherit<vsg::Visitor, DirectUpdater>
@@ -28,7 +28,7 @@ public:
         auto                    new_object = SceneObject::create();
         vsg::ref_ptr<vsg::Node> node;
         vsg::GeometryInfo       geom_info;
-        geom_info.position = gmtlToVsg(rm.offset);
+        geom_info.position  = gmtlToVsg(rm.offset);
         geom_info.transform = vsg::scale(rm.scale);
 
         if (rm.path == "cone")
@@ -56,42 +56,61 @@ public:
 
     auto makeOrbit(const OrbitalParameters& orbit)
     {
-        auto              new_object = SceneObject::create();
-        auto node = createOrbit(orbit, {});
+        auto new_object = SceneObject::create();
+        auto node       = createOrbit(orbit, {});
         threads->add(CompileOperation::create(viewer, new_object, node));
         return new_object;
     }
 
-    void updateOrbit([[maybe_unused]]entt::registry& r, entt::entity e) {
-        
-        //TODO: use parent to remove itself and re-attach
-        auto obj = objects.at(e);
-        auto iter = std::find(root->children.begin(), root->children.end(), obj);
-        if (iter != root->children.end())
+    void updateOrbit(entt::registry& r, entt::entity e)
+    {
+        vsg::ref_ptr<vsg::Group> parent;
+        auto                     cbr = registry.try_get<CentralBodyRef>(e);
+
+        if (cbr != nullptr && cbr->central_body != entt::null)
         {
-            auto old = *iter;
+            parent = objects[cbr->central_body];
+        }
+        else
+        {
+            parent = root;
+        }
+        // TODO: use parent to remove itself and re-attach
+        auto obj  = objects.at(e);
+        auto iter = std::find(parent->children.begin(), parent->children.end(), obj);
+        if (iter != parent->children.end())
+        {
+            auto old   = *iter;
             auto orbit = makeOrbit(registry.get<OrbitalParameters>(e));
             objects[e] = orbit;
             *iter      = orbit;
         }
-
     }
     void removeOrbit(entt::registry& r, entt::entity e)
     {
-        auto obj = objects.at(e);
-        root->children.erase(std::remove(root->children.begin(), root->children.end(), obj), root->children.end());
-        
+        auto                     obj = objects.at(e);
+        auto                     cbr = registry.try_get<CentralBodyRef>(e);
+        vsg::ref_ptr<vsg::Group> parent;
+        if (cbr != nullptr && cbr->central_body != entt::null)
+        {
+            parent = objects[cbr->central_body];
+        }
+        else
+        {
+            parent = root;
+        }
+        parent->children.erase(std::remove(parent->children.begin(), parent->children.end(), obj), parent->children.end());
     }
 
 
     void apply(vsg::FrameEvent& frame) override
     {
-        
+
         // all RenderModels
         for (const auto& [entity, pos, rm] : registry.view<StaticTransform, RenderModel>().each())
         {
             auto cbr = registry.try_get<Orbiter>(entity);
-            //root entity but parent not yet registered
+            // root entity but parent not yet registered
             if (cbr != nullptr && cbr->orbit != entt::null && !objects.contains(cbr->orbit) && !objects.contains(entity))
             {
                 continue;
@@ -101,8 +120,8 @@ public:
                 builder->options = {};
                 // create
                 auto new_object = factory(rm);
-                //special handling of orbits. TODO: maybe generalize root entities 
-                if ( cbr != nullptr)
+                // special handling of orbits. TODO: maybe generalize root entities
+                if (cbr != nullptr)
                 {
                     objects[cbr->orbit]->addChild(new_object);
                 }
@@ -110,17 +129,17 @@ public:
                 {
                     root->addChild(new_object);
                 }
-                
+
                 objects.emplace(entity, new_object);
             }
-            
+
             objects.at(entity)->update(gmtlToVsgd(pos.position));
         }
         // all Orbits
 
         for (const auto& [entity, orbit] : registry.view<OrbitalParameters>().each())
         {
-            auto cbr = registry.try_get<CentralBodyRef>(entity); 
+            auto cbr = registry.try_get<CentralBodyRef>(entity);
             if (cbr != nullptr && cbr->central_body != entt::null && !objects.contains(cbr->central_body) && !objects.contains(entity))
             {
                 continue;
@@ -135,7 +154,7 @@ public:
                 auto new_object = makeOrbit(orbit);
                 if (cbr != nullptr)
                 {
-                     objects[cbr->central_body]->addChild(new_object);
+                    objects[cbr->central_body]->addChild(new_object);
                 }
                 else
                 {
