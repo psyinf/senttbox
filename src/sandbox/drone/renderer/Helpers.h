@@ -160,22 +160,25 @@ auto linePipeline(vsg::ref_ptr<const vsg::Options> options)
 
     vsg::VertexInputState::Bindings vertexBindingsDescriptions{
         VkVertexInputBindingDescription{0, sizeof(vsg::vec3), VK_VERTEX_INPUT_RATE_VERTEX},  // vertex data
-        VkVertexInputBindingDescription{1, sizeof(vsg::vec3), VK_VERTEX_INPUT_RATE_INSTANCE} // colour data
+        VkVertexInputBindingDescription{1, sizeof(vsg::vec4), VK_VERTEX_INPUT_RATE_INSTANCE} // colour data
     };
 
     vsg::VertexInputState::Attributes vertexAttributeDescriptions{
         VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0}, // vertex data
-        VkVertexInputAttributeDescription{1, 1, VK_FORMAT_R32G32B32_SFLOAT, 0}  // colour data
+        VkVertexInputAttributeDescription{1, 1, VK_FORMAT_R32G32B32A32_SFLOAT, 0} // colour data
     };
+    auto colorBlend         = vsg::ColorBlendState::create();
+    colorBlend->attachments = vsg::ColorBlendState::ColorBlendAttachments{
+        {true, VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_SUBTRACT, VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT}};
 
     vsg::GraphicsPipelineStates pipelineStates{
         vsg::VertexInputState::create(vertexBindingsDescriptions, vertexAttributeDescriptions),
         vsg::InputAssemblyState::create(VK_PRIMITIVE_TOPOLOGY_LINE_STRIP, false),
         vsg::RasterizationState::create(),
         vsg::MultisampleState::create(),
-        vsg::ColorBlendState::create(),
+        colorBlend,
         vsg::DepthStencilState::create()};
-
+  
     auto pipelineLayout       = vsg::PipelineLayout::create(vsg::DescriptorSetLayouts{descriptorSetLayout}, pushConstantRanges);
     auto graphicsPipeline     = vsg::GraphicsPipeline::create(pipelineLayout, vsg::ShaderStages{vertexShader, fragmentShader}, pipelineStates);
     auto bindGraphicsPipeline = vsg::BindGraphicsPipeline::create(graphicsPipeline);
@@ -203,13 +206,13 @@ vsg::ref_ptr<vsg::Node> createOrbit(const OrbitalParameters& op, vsg::ref_ptr<co
         vertices->at(i) = gmtlToVsgd(OrbitalMechanics::getEulerAnglesFromEccentricAnomaly(op, vsg::PI * 2.0 * i / num_steps).toCartesian());
     }
     // set up vertex and index arrays
-    auto colors = vsg::vec3Array::create(vertices->size());
+    auto colors = vsg::vec4Array::create(vertices->size());
        
     auto indices = vsg::ushortArray::create(vertices->size());
     for (auto i = 0; i < vertices->size(); i++)
     {
         indices->at(i) = i;
-        colors->at(i)  = {1.0f, 0.0f, 1.0f};
+        colors->at(i)  = {1.0f, 0.0f, 1.0f, 0.2f};
     }
 
 
