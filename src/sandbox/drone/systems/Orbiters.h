@@ -27,15 +27,14 @@ public:
 
     void update(Scene& scene, const FrameStamp& stamp) override
     {
-        auto view = scene.getRegistry().view<StaticTransform, Orbiter>();
-        for (auto&& [entity, spatial, orbiter] : view.each())
+        auto view = scene.getRegistry().view<StaticTransform, Orbiter, CentralBody>();
+        for (auto&& [entity, spatial, orbiter, body] : view.each())
         {
-            orbiter.epoch += 0.001;
-            //0.0001;
+            orbiter.epoch += 0.0001;
             if (scene.getRegistry().valid(orbiter.orbit)) {
                 auto [orbital_parameters, central_body_ref] = scene.getRegistry().get<OrbitalParameters, CentralBodyRef>(orbiter.orbit);
                 auto central_body = scene.getRegistry().get<CentralBody>(central_body_ref.central_body);
-                auto orbital_period                          = 2.0 * std::numbers::pi * std::sqrt(std::pow(orbital_parameters.semimajor_axis, 3.0) / (constants::G * central_body.mass));
+                auto orbital_period                          = 2.0 * std::numbers::pi * std::sqrt(std::pow(orbital_parameters.semimajor_axis, 3.0) / (constants::G * (central_body.mass + body.mass)));
                 spatial.position        = OrbitalMechanics::getEulerAngelsAtFraction(orbital_parameters, orbiter.epoch).toCartesian();
         
             }
