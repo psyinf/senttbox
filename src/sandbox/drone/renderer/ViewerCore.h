@@ -24,6 +24,8 @@ public:
         {
             throw std::runtime_error("Failed to initialize the window");
         }
+        window->clearColor() = VkClearColorValue{{0.05,0.05,0.05,1}};
+
 
         viewer->addWindow(window);
         // set up the camera
