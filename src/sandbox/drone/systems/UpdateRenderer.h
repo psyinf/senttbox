@@ -1,17 +1,17 @@
 #pragma once
 #include "System.h"
+
 #include <components/Kinematic.h>
-#include <components/RenderModel.h>
 #include <components/OrbitalParameters.h>
+#include <components/RenderModel.h>
 #include <entt/entt.hpp>
 #include <unordered_set>
 
 
-
-class UpdateRenderer : public System
+class [[deprecated("DirectUpdater in Renderer is used")]] UpdateRenderer : public System
 {
 public:
-    explicit UpdateRenderer(Scene& scene, UpdateQueue& q)
+    explicit UpdateRenderer(Scene & scene, UpdateQueue & q)
         : System(scene)
         , updateQueue(q)
     {
@@ -24,7 +24,7 @@ public:
         deleted_entities.insert(e);
     }
 
-    void update(Scene& scene, const FrameStamp& frame_stamp) override
+    void update(Scene & scene, const FrameStamp& frame_stamp) override
     {
 
         // TODO: use a lockfree queue?
@@ -39,9 +39,9 @@ public:
                 updates.emplace(entity, Update{transform, model});
             }
         }
-     
+
         {
-            auto view = scene.getRegistry().view<OrbitalParameters,RenderModel>();
+            auto view = scene.getRegistry().view<OrbitalParameters, RenderModel>();
             for (auto& entity : view)
             {
                 auto&& [orbital, model] = view.get<OrbitalParameters, RenderModel>(entity);
