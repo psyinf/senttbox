@@ -50,8 +50,10 @@ void saveScene(std::string_view file, Scenario scenario)
     }
     else if (scenario == Scenario::ORBITS)
     {
-        double planet_offset_scale = 1000.0;
-        double moon_orbit_scale_offset = 10000.0;
+
+        
+        double planet_offset_scale = 50.0;//1000.0;
+        double moon_orbit_scale_offset = 1.0; // 10000.0;
        
         CentralBody sun{"The Sun", 1.989e30};
         CentralBody earth{"The earth", 5.9722e24};
@@ -64,9 +66,9 @@ void saveScene(std::string_view file, Scenario scenario)
         auto earth_body = scene.makeEntity<CentralBody, Orbiter, StaticTransform, RenderModel>(std::move(earth), {o_sun, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{6356.752e3 * planet_offset_scale}});
        
         // moon orbiting earth
-        auto o_earth    = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.0, 0.3844e6 * moon_orbit_scale_offset , 0.0, 0.0, 0.0}, {earth_body});
+        auto o_earth    = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.0, 0.3844e9 * moon_orbit_scale_offset , 0.0, 0.0, 0.0}, {earth_body});
 
-        auto moon_body = scene.makeEntity<CentralBody, Orbiter, StaticTransform, RenderModel>(std::move(earth), {o_earth, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{1737.5 * planet_offset_scale * planet_offset_scale}});
+        auto moon_body = scene.makeEntity<CentralBody, Orbiter, StaticTransform, RenderModel>(std::move(moon), {o_earth, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{1737.5 * planet_offset_scale * planet_offset_scale}});
       
        
     }
@@ -150,7 +152,7 @@ public:
         system_factory.registerPrototype("physics", common::GenericFactory<Physics, Scene&>::proto());
         system_factory.registerPrototype("brownian", common::GenericFactory<BrownianPhysics, Scene&>::proto());
         system_factory.registerPrototype("gravitation", common::GenericFactory<Gravitation, Scene&>::proto());
-        system_factory.registerPrototype("update_renderer", common::GenericFactory<UpdateRenderer, Scene&>::proto(updateQueue));
+        //system_factory.registerPrototype("update_renderer", common::GenericFactory<UpdateRenderer, Scene&>::proto(updateQueue));
         system_factory.registerPrototype("orbiters", common::GenericFactory<Orbiters, Scene&>::proto());
     }
 
@@ -197,7 +199,7 @@ public:
                 advance = viewer.frame();
             }
 
-            if (frame_number % 100 == 0)
+            if (frame_number % 1000 == 0)
             {
                 logTimers(ms_systems, ms_rendering);
             }
@@ -237,7 +239,7 @@ int main(int argc, char** argv)
             .name       = "sample_scene", //
             .scene_file = "data/ent1.se", //
             .systems{
-                "physics", "update_renderer", "gravitation", "orbiters" //
+                "physics", "gravitation", "orbiters" //
             }                                                           //
         });
         test << j;
