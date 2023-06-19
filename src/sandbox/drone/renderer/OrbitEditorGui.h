@@ -4,6 +4,8 @@
 
 #include <components/OrbitalParameters.h>
 #include <components/Orbiter.h>
+#include <components/SceneProperties.h>
+#include <components/SimulationState.h>
 #include <fmt/format.h>
 #include <vsg/all.h>
 #include <vsgImGui/RenderImGui.h>
@@ -107,11 +109,52 @@ public:
 
     void record(vsg::CommandBuffer& cb) const override
     {
-
-        ImGui::Begin("Orbit Editor");
-        // editor.(registry);
-
+        ImDrawList* drawListR = ImGui::GetWindowDrawList();
+        drawListR->AddRectFilled({0,0}, ImVec2(200, 200), IM_COL32(0, 30, 0, 255));
+	
+      
+        {
+            bool             p_open       = true;
+            static int       location     = 0;
+            ImGuiIO&         io           = ImGui::GetIO();
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+            if (location >= 0)
+            {
+                const float          PAD       = 10.0f;
+                const ImGuiViewport* viewport  = ImGui::GetMainViewport();
+                ImVec2               work_pos  = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
+                ImVec2               work_size = viewport->WorkSize;
+                ImVec2               window_pos, window_pos_pivot;
+                window_pos.x       =  (work_pos.x + PAD);
+                window_pos.y       =  (work_pos.y + PAD);
+                window_pos_pivot.x =  0.0f;
+                window_pos_pivot.y =  0.0f;
+                ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+                window_flags |= ImGuiWindowFlags_NoMove;
+            }
+          
+            ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+            if (ImGui::Begin("Example: Simple overlay", &p_open, window_flags))
+            {
+                auto sim_state = registry.ctx().get<SimulationState>();
+               // IMGUI_DEMO_MARKER("Examples/Simple Overlay");
+                ImGui::Text("Simple overlay\n"
+                            "(right-click to change position)");
+                ImGui::Separator();
+                if (ImGui::IsMousePosValid())
+                    ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
+                else
+                    ImGui::Text("Mouse Position: <invalid>");
+                ImGui::Text("Universe Time: %s  (%i)", sim_state.time.format().c_str(), sim_state.time.seconds);
+               
+            }
+            ImGui::End();
+        }
         editor.renderSimpleCombo(registry, e);
+        ImGui::Begin("SceneProperties");
+        auto & scene_properties = registry.ctx().get<SceneProperties>();
+        ImGui::SilderDouble("TimeScale", &scene_properties.timestep_scale, 1.0, 100000000.0);
+       
         ImGui::End();
     }
 };

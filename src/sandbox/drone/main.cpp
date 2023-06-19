@@ -8,12 +8,16 @@
 #include <components/CentralBody.h>
 #include <components/OrbitalParameters.h>
 #include <components/Orbiter.h>
+#include <components/SceneProperties.h>
+#include <components/SimulationState.h>
 #include <components/serializers/CentralBody_cereal.h>
 #include <components/serializers/Kinematic_cereal.h>
 #include <components/serializers/OrbitalParameters_cereal.h>
 #include <components/serializers/Orbiter_cereal.h>
 #include <components/serializers/RenderModel_cereal.h>
 #include <components/serializers/StaticTransform_cereal.h>
+#include <components/serializers/SceneProperties_cereal.h>
+#include <components/serializers/SimulationState_cereal.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -23,6 +27,7 @@
 #include <systems/Orbiters.h>
 #include <systems/Physics.h>
 #include <systems/UpdateRenderer.h>
+#include <systems/SimulationProgress.h>
 enum class Scenario
 {
     GRAV,
@@ -50,8 +55,6 @@ void saveScene(std::string_view file, Scenario scenario)
     }
     else if (scenario == Scenario::ORBITS)
     {
-
-        
         double planet_offset_scale = 50.0;//1000.0;
         double moon_orbit_scale_offset = 1.0; // 10000.0;
        
@@ -68,7 +71,7 @@ void saveScene(std::string_view file, Scenario scenario)
         // moon orbiting earth
         auto o_earth    = scene.makeEntity<OrbitalParameters, CentralBodyRef>({0.0, 0.3844e9 * moon_orbit_scale_offset , 0.0, 0.0, 0.0}, {earth_body});
 
-        auto moon_body = scene.makeEntity<CentralBody, Orbiter, StaticTransform, RenderModel>(std::move(moon), {o_earth, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{1737.5 * planet_offset_scale * planet_offset_scale}});
+        auto moon_body = scene.makeEntity<CentralBody, Orbiter, StaticTransform, RenderModel>(std::move(moon), {o_earth, 0.0}, {}, {.path = "sphere", .offset{0, 0, 0}, .scale{1737.5e3 * planet_offset_scale}});
       
        
     }
@@ -152,7 +155,7 @@ public:
         system_factory.registerPrototype("physics", common::GenericFactory<Physics, Scene&>::proto());
         system_factory.registerPrototype("brownian", common::GenericFactory<BrownianPhysics, Scene&>::proto());
         system_factory.registerPrototype("gravitation", common::GenericFactory<Gravitation, Scene&>::proto());
-        //system_factory.registerPrototype("update_renderer", common::GenericFactory<UpdateRenderer, Scene&>::proto(updateQueue));
+        system_factory.registerPrototype("simProgress", common::GenericFactory<SimulationProgress, Scene&>::proto());
         system_factory.registerPrototype("orbiters", common::GenericFactory<Orbiters, Scene&>::proto());
     }
 
@@ -170,7 +173,10 @@ public:
             auto iarchive = cereal::JSONInputArchive(stream);
             scene.load<StaticTransform, Kinematic, RenderModel, OrbitalParameters, Orbiter, CentralBodyRef, CentralBody>(scene.getRegistry(), iarchive);
         }
-
+        //load scene properties
+        //TODO: from file
+        scene.getRegistry().ctx().emplace<SceneProperties>(SceneProperties{});
+        scene.getRegistry().ctx().emplace<SimulationState>(SimulationState{});
 
         viewer.setup(scene.getRegistry());
     }
@@ -239,8 +245,8 @@ int main(int argc, char** argv)
             .name       = "sample_scene", //
             .scene_file = "data/ent1.se", //
             .systems{
-                "physics", "gravitation", "orbiters" //
-            }                                                           //
+                "physics", "gravitation", "orbiters", "simProgress" //
+            }                                                     
         });
         test << j;
 

@@ -2,12 +2,12 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <fmt/format.h>
 #include <functional>
-#include <vsgImGui/imgui.h>
 #include <map>
 #include <set>
 #include <string>
-#include <fmt/format.h>
+#include <vsgImGui/imgui.h>
 
 
 constexpr auto MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY = "MM_IEEE_ENTITY";
@@ -15,7 +15,7 @@ constexpr auto MM_IEEE_IMGUI_PAYLOAD_TYPE_ENTITY = "MM_IEEE_ENTITY";
 
 namespace MM
 {
-//TODO: put to registry
+// TODO: put to registry
 struct EditorState
 {
     entt::entity selected{entt::null}; /// the entity currently being edited
@@ -38,7 +38,7 @@ inline void EntityWidget(EntityType& e, entt::basic_registry<EntityType>& reg, b
     {
         ImGui::Text("Invalid Entity");
     }
-    
+
     ImGui::PopID();
 }
 
@@ -329,6 +329,7 @@ public:
                 if (ImGui::BeginChild("editor"))
                 {
                     renderEditor(registry, e);
+
                 }
                 ImGui::EndChild();
             }

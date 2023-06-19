@@ -43,6 +43,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
 set_target_properties(${APP_NAME} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 set_target_properties(${APP_NAME} PROPERTIES RELWITHDEBINFO_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
 set_target_properties(${APP_NAME} PROPERTIES FOLDER "Sandbox")
+target_compile_options(${APP_NAME} PRIVATE /bigobj)
 
 install(TARGETS ${APP_NAME}
         CONFIGURATIONS Debug Release RelWithDebInfo 

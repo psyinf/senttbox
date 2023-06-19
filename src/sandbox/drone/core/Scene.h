@@ -33,6 +33,7 @@ public:
     template <typename... Components, typename Archive> 
     void save(const entt::registry& reg, Archive& archive) {
         entt::snapshot{reg}.entities(archive).component<Components...>(archive);
+        
         //saveComponent<Components...>(archive, snapshot);       
     }
 
