@@ -16,12 +16,13 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(glslang CONFIG REQUIRED)
 find_package(cereal CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
-
+find_package(magic_enum CONFIG REQUIRED)
 target_link_libraries (${APP_NAME} 
 	PRIVATE				
 		${PROJECT_NAMESPACE}::common
 		spdlog::spdlog_header_only
 		EnTT::EnTT
+		magic_enum::magic_enum
 		vsg::vsg
 		vsgImGui::vsgImGui
 		glslang::glslang

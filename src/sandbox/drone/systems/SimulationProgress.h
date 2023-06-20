@@ -18,7 +18,11 @@ public:
     {
         auto& scene_props = scene.getRegistry().ctx().get<SceneProperties>();
         auto& sim_state   = scene.getRegistry().ctx().get<SimulationState>();
+        if (!scene_props.paused)
+		{
+            sim_state.time.add(stamp.frame_time, scene_props.timestep_scale);
+        }	
 
-        sim_state.time.add(stamp.frame_time, scene_props.timestep_scale);
+        
     }
 };

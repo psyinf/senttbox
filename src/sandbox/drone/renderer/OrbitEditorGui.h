@@ -12,6 +12,7 @@
 #include <vsgImGui/SendEventsToImGui.h>
 #include <vsgImGui/Texture.h>
 #include <vsgImGui/imgui.h>
+#include <magic_enum.hpp>
 
 namespace ImGui
 {
@@ -51,13 +52,13 @@ void ComponentEditorWidget<OrbitalParameters>(entt::registry& reg, entt::registr
 template <>
 void ComponentEditorWidget<Orbiter>(entt::registry& reg, entt::registry::entity_type e)
 {
-    auto current_orbit= reg.get<Orbiter>(e);
+    auto current_orbit    = reg.get<Orbiter>(e);
     auto referenced_orbit = reg.get<OrbitalParameters>(current_orbit.orbit);
 
-    auto change        = ImGui::SilderDouble("epoch", &current_orbit.epoch, 0.0, 1.0);
+    auto change = ImGui::SilderDouble("epoch", &current_orbit.epoch, 0.0, 1.0);
     if (ImGui::BeginCombo("combo 1", fmt::format("ID: {}", entt::to_integral(current_orbit.orbit)).c_str()))
     {
-        auto                     item_current_idx = 0;
+        auto                                     item_current_idx = 0;
         std::vector<entt::registry::entity_type> items;
         for (const auto& [entity, orbit] : reg.view<OrbitalParameters>().each())
         {
@@ -66,7 +67,6 @@ void ComponentEditorWidget<Orbiter>(entt::registry& reg, entt::registry::entity_
                 item_current_idx = items.size();
             }
             items.push_back(entity);
-           
         }
 
         for (int n = items.size(); n-- > 0;)
@@ -80,15 +80,13 @@ void ComponentEditorWidget<Orbiter>(entt::registry& reg, entt::registry::entity_
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
-        
+
         if (items[item_current_idx] != current_orbit.orbit || change)
         {
             current_orbit.orbit = items[item_current_idx];
             reg.emplace_or_replace<Orbiter>(e, current_orbit);
         }
-
     }
-
 }
 } // namespace MM
 
@@ -109,14 +107,18 @@ public:
 
     void record(vsg::CommandBuffer& cb) const override
     {
+
+        auto& scene_properties = registry.ctx().get<SceneProperties>();
+        auto& sim_state        = registry.ctx().get<SimulationState>();
+
         ImDrawList* drawListR = ImGui::GetWindowDrawList();
-        drawListR->AddRectFilled({0,0}, ImVec2(200, 200), IM_COL32(0, 30, 0, 255));
-	
-      
+        drawListR->AddRectFilled({0, 0}, ImVec2(200, 200), IM_COL32(0, 30, 0, 255));
+
+
         {
             bool             p_open       = true;
             static int       location     = 0;
-            ImGuiIO&         io           = ImGui::GetIO();
+            const ImGuiIO&   io           = ImGui::GetIO();
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
             if (location >= 0)
             {
@@ -124,37 +126,71 @@ public:
                 const ImGuiViewport* viewport  = ImGui::GetMainViewport();
                 ImVec2               work_pos  = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
                 ImVec2               work_size = viewport->WorkSize;
-                ImVec2               window_pos, window_pos_pivot;
-                window_pos.x       =  (work_pos.x + PAD);
-                window_pos.y       =  (work_pos.y + PAD);
-                window_pos_pivot.x =  0.0f;
-                window_pos_pivot.y =  0.0f;
-                ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+                ImVec2               window_pos;
+                window_pos.x = (work_pos.x + PAD);
+                window_pos.y = (work_pos.y + PAD);
+
+                ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, ImVec2{0.0, 0.0});
                 window_flags |= ImGuiWindowFlags_NoMove;
             }
-          
+
             ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
-            if (ImGui::Begin("Example: Simple overlay", &p_open, window_flags))
+            if (ImGui::Begin("Overlay", &p_open, window_flags))
             {
-                auto sim_state = registry.ctx().get<SimulationState>();
-               // IMGUI_DEMO_MARKER("Examples/Simple Overlay");
-                ImGui::Text("Simple overlay\n"
-                            "(right-click to change position)");
+                ImGui::AlignTextToFramePadding();
+                
+                ImGui::Text("Factor: %12.2f", scene_properties.timestep_scale);
+                ImGui::SameLine();
+                ImGui::Text("UT: %s", sim_state.time.format().c_str(), sim_state.time.seconds);
+                if (scene_properties.showInterface & DEBUG_TIME)
+                {
+					ImGui::SameLine();
+					ImGui::Text("(%5i)",sim_state.time.seconds);
+				}
+
+                ImGui::AlignTextToFramePadding();
+                if (ImGui::Button("Pause"))
+                {
+                    scene_properties.paused = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Play"))
+                {
+                    scene_properties.paused = false;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("+"))
+                {
+                    scene_properties.timestep_scale *= 10.0;
+                    scene_properties.timestep_scale = std::min(scene_properties.timestep_scale, 100000000.0);
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("-"))
+                {
+                    scene_properties.timestep_scale *= 0.1;
+                    scene_properties.timestep_scale = std::max(scene_properties.timestep_scale, 0.01);
+                }
+                ImGui::SameLine();
                 ImGui::Separator();
-                if (ImGui::IsMousePosValid())
-                    ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
-                else
-                    ImGui::Text("Mouse Position: <invalid>");
-                ImGui::Text("Universe Time: %s  (%i)", sim_state.time.format().c_str(), sim_state.time.seconds);
                
+                using namespace magic_enum::bitwise_operators; // out-of-the-box bitwise operators for enums.
+               
+                if (scene_properties.showInterface & DEBUG_MOUSE)
+                {
+                    if (ImGui::IsMousePosValid())
+                        ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
+                    else
+                        ImGui::Text("Mouse Position: <invalid>");
+              
+                }
             }
             ImGui::End();
         }
         editor.renderSimpleCombo(registry, e);
         ImGui::Begin("SceneProperties");
-        auto & scene_properties = registry.ctx().get<SceneProperties>();
+
         ImGui::SilderDouble("TimeScale", &scene_properties.timestep_scale, 1.0, 100000000.0);
-       
+
         ImGui::End();
     }
 };
