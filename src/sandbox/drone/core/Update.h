@@ -7,8 +7,9 @@
 
 struct FrameStamp
 {
-    std::chrono::milliseconds frame_time;
-    uint64_t                  frame_number;
+    std::chrono::milliseconds frame_time{0};
+    uint64_t                  frame_number{0};
+
     static double             toSeconds(std::chrono::milliseconds delta)
     {
         std::chrono::duration<double, std::ratio<1, 1>> t = delta;
@@ -20,7 +21,6 @@ struct Update
     StaticTransform transform;
     RenderModel     model;
     bool            remove = false;
-    
 };
 
 class UpdateQueue
