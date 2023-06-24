@@ -2,6 +2,7 @@
 #include "Helpers.h"
 #include "LoadOperation.h"
 #include "SceneObject.h"
+#include "components/Camera.h"
 #include "components/CentralBody.h"
 #include "components/OrbitalParameters.h"
 #include "components/Orbiter.h"
@@ -11,15 +12,16 @@
 class DirectUpdater : public vsg::Inherit<vsg::Visitor, DirectUpdater>
 {
 public:
-    DirectUpdater(vsg::ref_ptr<vsg::Group> root, vsg::ref_ptr<vsg::Viewer> viewer, entt::registry& reg)
+    DirectUpdater(vsg::ref_ptr<vsg::Group> root, vsg::ref_ptr<vsg::Viewer> viewer, vsg::ref_ptr<vsg::Camera> camera, entt::registry& reg)
         : root(root)
         , viewer(viewer)
+        , controller(vsg::Trackball::create(camera))
         , threads(vsg::OperationThreads::create(1, viewer->status))
         , registry(reg)
-
     {
         if (!root)
             throw std::invalid_argument("Root mustn't be a nullptr");
+        viewer->addEventHandler(controller);
         // TODO: on_delete handling
     }
 
@@ -102,6 +104,30 @@ public:
         parent->children.erase(std::remove(parent->children.begin(), parent->children.end(), obj), parent->children.end());
     }
 
+    bool hasChild(vsg::ref_ptr<vsg::Group> root, vsg::ref_ptr<vsg::Node> target, std::vector<vsg::ref_ptr<vsg::Group>>& path)
+    {
+        for (const auto& child : root->children)
+        {
+            if (child == target)
+            {
+                return true;
+            }
+            else
+            {
+                if (child->cast<vsg::Group>())
+                {
+                    bool result =  hasChild(vsg::ref_ptr<vsg::Group>(child->cast<vsg::Group>()), target, path);
+                    if (result)
+                    {
+                        path.push_back(vsg::ref_ptr<vsg::Group>(child->cast<vsg::Group>()));
+                        return result;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
 
     void apply(vsg::FrameEvent& frame) override
     {
@@ -163,6 +189,28 @@ public:
                 objects.emplace(entity, new_object);
             }
         }
+        auto& camera = registry.ctx().get<Camera>();
+
+        if (camera.tracked_entity != entt::null)
+        {
+            float radius  = 3e10;
+            auto  tracked = objects.at(camera.tracked_entity);
+            std::vector<vsg::ref_ptr<vsg::Group>> path;
+            if (hasChild(root, tracked, path ))
+            {
+                path.push_back(tracked);
+                auto pos = vsg::visit<vsg::ComputeTransform>(path).matrix[3].xyz;
+
+                auto look_at = vsg::LookAt::create(vsg::dvec3(0, 0, radius) + pos * 0.9, pos, vsg::dvec3(0.0, 0.0, 1.0));
+
+
+                controller->setViewpoint(look_at, 0.0);
+                trackedEntity = camera.tracked_entity;
+                // camera.tracked_entity = entt::null;
+            }
+            
+        }
+
         root->accept(*this);
     }
 
@@ -170,9 +218,11 @@ public:
 private:
     vsg::ref_ptr<vsg::Group>            root;
     vsg::observer_ptr<vsg::Viewer>      viewer;
+    vsg::ref_ptr<vsg::Trackball>        controller;
     vsg::ref_ptr<vsg::OperationThreads> threads;
     vsg::ref_ptr<vsg::Builder>          builder = vsg::Builder::create();
 
     std::unordered_map<entt::entity, vsg::ref_ptr<SceneObject>> objects;
     entt::registry&                                             registry;
+    entt::entity                                                trackedEntity;
 };

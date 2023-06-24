@@ -35,7 +35,7 @@ public:
 
         camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 
-        updater = DirectUpdater::create(sceneRoot, viewer, reg); // SceneUpdater::create(sceneRoot, viewer, queue);
+        updater = DirectUpdater::create(sceneRoot, viewer, camera, reg ); // SceneUpdater::create(sceneRoot, viewer, queue);
         viewer->addEventHandler(updater);
 
         auto commandGraph = vsg::CommandGraph::create(window);
@@ -58,7 +58,6 @@ public:
         }
 
         viewer->addEventHandler(vsg::CloseHandler::create(viewer));
-        viewer->addEventHandler(vsg::Trackball::create(camera));
         viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
         viewer->compile();
     }
@@ -85,7 +84,10 @@ public:
         return advance;
     }
 
-
+    vsg::ref_ptr<vsg::Camera>            getCamera()
+    {
+        return camera;
+    }
 private:
     vsg::ref_ptr<vsg::Viewer>  viewer    = vsg::Viewer::create();
     vsg::ref_ptr<vsg::Options> options   = vsg::Options::create();

@@ -12,8 +12,8 @@ public:
 
     void update(vsg::dvec3 pos, vsg::dvec3 scale)
     {
-        position     = pos;
-       
+        position = pos;
+
         this->matrix = vsg::translate(position) * vsg::rotate(vsg::dquat{}) * vsg::scale(scale); // pivot* vsg::translate(- vsg::dvec3{0,0,-0});
     }
 
@@ -23,9 +23,11 @@ public:
 
         this->matrix = vsg::translate(position);
     }
-    
+    const vsg::dvec3& getPosition() const
+    {
+        return position;
+    }
 
 private:
     vsg::dvec3 position;
 };
-

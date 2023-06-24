@@ -177,7 +177,7 @@ public:
         //TODO: from file
         scene.getRegistry().ctx().emplace<SceneProperties>(SceneProperties{});
         scene.getRegistry().ctx().emplace<SimulationState>(SimulationState{});
-
+        scene.getRegistry().ctx().emplace<Camera>(Camera{});
         viewer.setup(scene.getRegistry());
     }
 

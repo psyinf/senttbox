@@ -6,12 +6,13 @@
 #include <components/Orbiter.h>
 #include <components/SceneProperties.h>
 #include <components/SimulationState.h>
+#include <components/CentralBody.h>
 #include <fmt/format.h>
 #include <vsg/all.h>
 #include <vsgImGui/RenderImGui.h>
 #include <vsgImGui/SendEventsToImGui.h>
 #include <vsgImGui/Texture.h>
-#include <vsgImGui/imgui.h>
+
 #include <magic_enum.hpp>
 
 namespace ImGui
@@ -31,6 +32,18 @@ bool SilderDoubleAngular(const char* label, double* v, const char* format = null
 namespace MM
 {
 template <>
+void ComponentEditorWidget<CentralBody>(entt::registry& reg, entt::registry::entity_type e)
+{
+    auto t = reg.get<CentralBody>(e);
+    ImGui::Text(t.name.c_str());
+    if (ImGui::Button("Follow"))
+    {
+        auto& cam = reg.ctx().get<Camera>();
+        cam.tracked_entity = e;
+    }
+}
+
+template <>
 void ComponentEditorWidget<OrbitalParameters>(entt::registry& reg, entt::registry::entity_type e)
 {
     auto t = reg.get<OrbitalParameters>(e);
@@ -49,6 +62,7 @@ void ComponentEditorWidget<OrbitalParameters>(entt::registry& reg, entt::registr
         reg.emplace_or_replace<OrbitalParameters>(e, t);
     }
 }
+
 template <>
 void ComponentEditorWidget<Orbiter>(entt::registry& reg, entt::registry::entity_type e)
 {
@@ -102,7 +116,9 @@ public:
     {
         editor.registerComponent<OrbitalParameters>("OrbitalParameters");
         editor.registerComponent<Orbiter>("Orbits");
+        editor.registerComponent<CentralBody>("CentralBody");
     }
+
 
 
     void record(vsg::CommandBuffer& cb) const override
